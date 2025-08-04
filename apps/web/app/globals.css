@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Vercel-style button components */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply bg-foreground text-background hover:bg-muted-foreground focus:ring-foreground;
+  }
+  
+  .btn-secondary {
+    @apply bg-muted text-muted-foreground border border-border hover:bg-accent focus:ring-border;
+  }
+  
+  .btn-ghost {
+    @apply text-muted-foreground hover:bg-muted hover:text-foreground;
+  }
+  
+  /* Card components */
+  .card {
+    @apply bg-card text-card-foreground rounded-lg border border-border shadow-sm;
+  }
+  
+  /* Typography utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Animation utilities */
+  .animate-in {
+    @apply animate-fade-in;
+  }
+  
+  .animate-up {
+    @apply animate-slide-up;
+  }
+  
+  /* Voice interaction indicators */
+  .voice-indicator {
+    @apply relative;
+  }
+  
+  .voice-indicator::before {
+    content: '';
+    @apply absolute -inset-1 bg-gradient-to-r from-transparent via-foreground to-transparent opacity-20 blur-sm rounded-full animate-pulse-slow;
+  }
+}

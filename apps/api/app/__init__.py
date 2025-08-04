@@ -1,0 +1,1 @@
+# Seiketsu AI API Application
