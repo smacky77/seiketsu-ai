@@ -1,0 +1,454 @@
+name: Frontend Testing Suite
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Unit and Integration Tests
+  unit-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Run type checking
+        run: |
+          cd apps/web
+          npm run type-check
+
+      - name: Run unit tests
+        run: |
+          cd apps/web
+          npm run test -- --coverage --watchAll=false --maxWorkers=2
+        env:
+          CI: true
+
+      - name: Run integration tests
+        run: |
+          cd apps/web
+          npm run test:integration -- --watchAll=false --maxWorkers=2
+        env:
+          CI: true
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./apps/web/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            apps/web/coverage/
+            apps/web/test-results/
+
+  # Voice AI Specific Tests
+  voice-ai-tests:
+    name: Voice AI System Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Run voice AI tests
+        run: |
+          cd apps/web
+          npm run test -- --testPathPattern=voice-ai --watchAll=false --maxWorkers=2
+        env:
+          CI: true
+
+      - name: Run voice AI performance tests
+        run: |
+          cd apps/web
+          npm run test -- --testPathPattern=performance/voice-ai --watchAll=false --maxWorkers=1
+        env:
+          CI: true
+          PERFORMANCE_TESTING: true
+
+      - name: Archive voice AI test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: voice-ai-test-results
+          path: |
+            apps/web/voice-ai-test-results/
+            apps/web/performance-reports/
+
+  # Accessibility Tests
+  accessibility-tests:
+    name: Accessibility Compliance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Install accessibility testing tools
+        run: |
+          cd apps/web
+          npm install --save-dev @axe-core/react axe-playwright
+
+      - name: Run accessibility tests
+        run: |
+          cd apps/web
+          npm run test -- --testPathPattern=accessibility --watchAll=false --maxWorkers=2
+        env:
+          CI: true
+          ACCESSIBILITY_TESTING: true
+
+      - name: Generate accessibility report
+        run: |
+          cd apps/web
+          npm run test:accessibility:report
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: accessibility-report
+          path: |
+            apps/web/accessibility-report/
+            apps/web/a11y-violations.json
+
+  # Performance Benchmarking
+  performance-tests:
+    name: Performance Benchmarking
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Run performance tests
+        run: |
+          cd apps/web
+          npm run test:performance -- --watchAll=false --maxWorkers=1
+        env:
+          CI: true
+          PERFORMANCE_TESTING: true
+
+      - name: Performance benchmark validation
+        run: |
+          cd apps/web
+          npm run validate:performance:benchmarks
+
+      - name: Generate performance report
+        run: |
+          cd apps/web
+          npm run generate:performance:report
+
+      - name: Upload performance artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: |
+            apps/web/performance-results/
+            apps/web/benchmark-report.json
+
+  # End-to-End Tests
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      # Mock backend service for E2E tests
+      mock-api:
+        image: mockserver/mockserver:5.15.0
+        ports:
+          - 1080:1080
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Python (for backend mock)
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install frontend dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          cd apps/web
+          npx playwright install --with-deps
+
+      - name: Setup mock backend
+        run: |
+          cd apps/api
+          pip install -r requirements-minimal.txt
+          python simple_server.py &
+          sleep 10
+
+      - name: Build application
+        run: |
+          cd apps/web
+          npm run build
+
+      - name: Start application
+        run: |
+          cd apps/web
+          npm run start &
+          sleep 20
+        env:
+          PORT: 3000
+
+      - name: Run E2E tests
+        run: |
+          cd apps/web
+          npx playwright test --config=playwright.config.ts
+        env:
+          CI: true
+          BASE_URL: http://localhost:3000
+          API_URL: http://localhost:8000
+
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-test-results
+          path: |
+            apps/web/test-results/
+            apps/web/playwright-report/
+
+  # Multi-Tenant Testing
+  multi-tenant-tests:
+    name: Multi-Tenant Isolation Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    strategy:
+      matrix:
+        tenant: ['tenant-a', 'tenant-b', 'tenant-c']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Run multi-tenant tests for ${{ matrix.tenant }}
+        run: |
+          cd apps/web
+          npm run test -- --testPathPattern=multi-tenant --watchAll=false --maxWorkers=2
+        env:
+          CI: true
+          TEST_TENANT: ${{ matrix.tenant }}
+
+      - name: Validate tenant isolation
+        run: |
+          cd apps/web
+          npm run validate:tenant:isolation -- --tenant=${{ matrix.tenant }}
+
+  # Security and Compliance Testing
+  security-tests:
+    name: Security & Compliance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Run security audit
+        run: |
+          cd apps/web
+          npm audit --audit-level=moderate
+
+      - name: Run dependency vulnerability scan
+        run: |
+          cd apps/web
+          npx better-npm-audit audit --level=moderate
+
+      - name: Run compliance tests
+        run: |
+          cd apps/web
+          npm run test:compliance -- --watchAll=false
+
+      - name: GDPR compliance validation
+        run: |
+          cd apps/web
+          npm run validate:gdpr:compliance
+
+  # Quality Gates and Reporting
+  quality-gates:
+    name: Quality Gates & Reporting
+    runs-on: ubuntu-latest
+    needs: [unit-tests, voice-ai-tests, accessibility-tests, performance-tests, e2e-tests]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Generate consolidated test report
+        run: |
+          npx jest-html-reporters --config=jest-report.config.js
+
+      - name: Check quality gates
+        run: |
+          # Coverage threshold check
+          node scripts/check-coverage-threshold.js
+          
+          # Performance benchmark validation
+          node scripts/validate-performance-benchmarks.js
+          
+          # Accessibility compliance check
+          node scripts/validate-accessibility-compliance.js
+
+      - name: Generate quality report
+        run: |
+          node scripts/generate-quality-report.js
+
+      - name: Post quality report to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const qualityReport = fs.readFileSync('quality-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: qualityReport
+            });
+
+      - name: Upload consolidated report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-report
+          path: |
+            quality-report.md
+            quality-metrics.json
+            consolidated-test-report.html
+
+  # Notification and Alerts
+  notify:
+    name: Test Results Notification
+    runs-on: ubuntu-latest
+    needs: [quality-gates]
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: Notify on failure
+        if: ${{ contains(needs.*.result, 'failure') }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify on success
+        if: ${{ !contains(needs.*.result, 'failure') }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

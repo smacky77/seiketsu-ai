@@ -4,6 +4,54 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cal+Sans:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+  }
+}
 
 @layer base {
   * {
@@ -18,52 +66,247 @@
   html {
     scroll-behavior: smooth;
   }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
 }
 
 @layer components {
-  /* Vercel-style button components */
+  /* Enterprise Button System */
   .btn {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
   
-  .btn-primary {
-    @apply bg-foreground text-background hover:bg-muted-foreground focus:ring-foreground;
+  .btn-default {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
+  }
+  
+  .btn-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
   }
   
   .btn-secondary {
-    @apply bg-muted text-muted-foreground border border-border hover:bg-accent focus:ring-border;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
   
   .btn-ghost {
-    @apply text-muted-foreground hover:bg-muted hover:text-foreground;
+    @apply hover:bg-accent hover:text-accent-foreground;
   }
   
-  /* Card components */
+  .btn-link {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+  
+  .btn-sm {
+    @apply h-9 rounded-md px-3;
+  }
+  
+  .btn-lg {
+    @apply h-11 rounded-md px-8;
+  }
+  
+  .btn-icon {
+    @apply h-10 w-10;
+  }
+
+  /* Enterprise Card System */
   .card {
-    @apply bg-card text-card-foreground rounded-lg border border-border shadow-sm;
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
   }
-  
-  /* Typography utilities */
-  .text-balance {
-    text-wrap: balance;
+
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-6;
   }
-  
+
+  .card-title {
+    @apply text-2xl font-semibold leading-none tracking-tight;
+  }
+
+  .card-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .card-content {
+    @apply p-6 pt-0;
+  }
+
+  .card-footer {
+    @apply flex items-center p-6 pt-0;
+  }
+
+  /* Voice Agent Components */
+  .voice-status-indicator {
+    @apply relative flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300;
+  }
+
+  .voice-status-active {
+    @apply bg-voice-active shadow-voice animate-voice-pulse;
+  }
+
+  .voice-status-listening {
+    @apply bg-voice-listening animate-pulse;
+  }
+
+  .voice-status-processing {
+    @apply bg-voice-processing animate-spin-slow;
+  }
+
+  .voice-status-error {
+    @apply bg-voice-error animate-bounce-gentle;
+  }
+
+  .voice-status-idle {
+    @apply bg-voice-idle;
+  }
+
+  /* Waveform Animation */
+  .waveform {
+    @apply flex items-center justify-center space-x-1;
+  }
+
+  .waveform-bar {
+    @apply w-1 bg-current animate-waveform;
+  }
+
+  .waveform-bar:nth-child(1) { animation-delay: 0ms; }
+  .waveform-bar:nth-child(2) { animation-delay: 100ms; }
+  .waveform-bar:nth-child(3) { animation-delay: 200ms; }
+  .waveform-bar:nth-child(4) { animation-delay: 300ms; }
+  .waveform-bar:nth-child(5) { animation-delay: 400ms; }
+
+  /* Data Table Enhancements */
+  .data-table {
+    @apply w-full border-collapse border-spacing-0;
+  }
+
+  .data-table th {
+    @apply border-b border-border px-4 py-3 text-left text-sm font-medium text-muted-foreground;
+  }
+
+  .data-table td {
+    @apply border-b border-border px-4 py-3 text-sm;
+  }
+
+  .data-table tr:hover {
+    @apply bg-muted/50;
+  }
+
+  /* Form Components */
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-label {
+    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+  }
+
+  .form-input {
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .form-textarea {
+    @apply flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Enterprise Dashboard Grid */
+  .dashboard-grid {
+    @apply grid gap-4 md:gap-6;
+  }
+
+  .dashboard-grid-1 {
+    @apply grid-cols-1;
+  }
+
+  .dashboard-grid-2 {
+    @apply md:grid-cols-2;
+  }
+
+  .dashboard-grid-3 {
+    @apply md:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .dashboard-grid-4 {
+    @apply md:grid-cols-2 lg:grid-cols-4;
+  }
+
+  /* Status Badges */
+  .status-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .status-success {
+    @apply bg-status-success/10 text-status-success;
+  }
+
+  .status-warning {
+    @apply bg-status-warning/10 text-status-warning;
+  }
+
+  .status-error {
+    @apply bg-status-error/10 text-status-error;
+  }
+
+  .status-info {
+    @apply bg-status-info/10 text-status-info;
+  }
+
+  /* Multi-tenant Organization Switcher */
+  .org-switcher {
+    @apply flex items-center space-x-2 p-2 rounded-md hover:bg-accent transition-colors;
+  }
+
+  /* Responsive utilities */
+  .container-fluid {
+    @apply w-full px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-spacing {
+    @apply py-8 sm:py-12 lg:py-16;
+  }
+
   /* Animation utilities */
   .animate-in {
     @apply animate-fade-in;
   }
-  
+
   .animate-up {
     @apply animate-slide-up;
   }
-  
-  /* Voice interaction indicators */
-  .voice-indicator {
-    @apply relative;
+
+  .animate-down {
+    @apply animate-slide-down;
   }
-  
-  .voice-indicator::before {
-    content: '';
-    @apply absolute -inset-1 bg-gradient-to-r from-transparent via-foreground to-transparent opacity-20 blur-sm rounded-full animate-pulse-slow;
+
+  /* Typography utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Focus states */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }

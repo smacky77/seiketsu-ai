@@ -3,7 +3,8 @@ Configuration settings for Seiketsu AI API
 """
 import os
 from typing import List, Optional
-from pydantic import BaseSettings, validator
+from pydantic_settings import BaseSettings
+from pydantic import validator
 import secrets
 
 
@@ -43,6 +44,9 @@ class Settings(BaseSettings):
     
     # ElevenLabs settings
     ELEVEN_LABS_API_KEY: str = os.getenv("ELEVEN_LABS_API_KEY", "")
+    
+    # OpenAI settings
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     ELEVEN_LABS_BASE_URL: str = "https://api.elevenlabs.io/v1"
     ELEVEN_LABS_TIMEOUT: int = 30
     

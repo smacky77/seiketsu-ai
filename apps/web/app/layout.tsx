@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ToolbarProvider } from '@/components/layout/ToolbarProvider'
+import { ApiProvider } from '@/lib/providers/ApiProvider'
+import { ReactQueryProvider } from '@/lib/providers/react-query-provider'
+import { AuthProvider } from '@/lib/auth/auth-provider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -49,10 +52,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <body className={inter.className}>
-        <ToolbarProvider />
-        {children}
+        <ReactQueryProvider>
+          <AuthProvider>
+            <ApiProvider>
+              <ToolbarProvider />
+              {children}
+            </ApiProvider>
+          </AuthProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   )
