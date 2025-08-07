@@ -1,0 +1,81 @@
+{
+  "version": "1.0.0",
+  "project": "seiketsu-ai",
+  "framework": "next",
+  "frameworkVersion": "15.1.0",
+  "language": "typescript",
+  "styling": {
+    "system": "tailwind",
+    "colorMode": "oklch",
+    "designTokens": true,
+    "responsiveDesign": true
+  },
+  "ui": {
+    "libraries": [
+      "@radix-ui/react",
+      "framer-motion",
+      "recharts",
+      "lucide-react"
+    ],
+    "componentLibrary": "custom",
+    "animations": {
+      "enabled": true,
+      "library": "framer-motion",
+      "customAnimations": true
+    }
+  },
+  "features": {
+    "voice": {
+      "enabled": true,
+      "provider": "elevenlabs",
+      "features": ["recording", "playback", "streaming", "transcription"]
+    },
+    "realtime": {
+      "enabled": true,
+      "provider": "socket.io"
+    },
+    "forms": {
+      "validation": "zod",
+      "library": "react-hook-form"
+    }
+  },
+  "interfaces": [
+    {
+      "name": "landing",
+      "theme": "gold",
+      "primaryColor": "oklch(0.8100 0.1700 75.3500)",
+      "components": ["HeroSection", "PricingSection", "ConversionForm", "TrustIndicators"]
+    },
+    {
+      "name": "dashboard",
+      "theme": "blue",
+      "primaryColor": "oklch(0.5800 0.2100 260.8400)",
+      "components": ["VoiceInterface", "Analytics", "ConversationHistory", "Settings"]
+    },
+    {
+      "name": "admin",
+      "theme": "gray",
+      "primaryColor": "oklch(0.5600 0 0)",
+      "components": ["UserManagement", "Billing", "SystemSettings", "RolePermissions"]
+    },
+    {
+      "name": "client",
+      "theme": "gold",
+      "primaryColor": "oklch(0.8100 0.1700 75.3500)",
+      "components": ["ClientDashboard", "PropertyView", "AgentChat", "Documents"]
+    }
+  ],
+  "generation": {
+    "componentPath": "components",
+    "pagePatp": "app",
+    "typeDefinitions": true,
+    "testFiles": true,
+    "storybook": false
+  },
+  "optimization": {
+    "codeShitting": true,
+    "lazyLoading": true,
+    "imageOptimization": true,
+    "performanceMonitoring": true
+  }
+}

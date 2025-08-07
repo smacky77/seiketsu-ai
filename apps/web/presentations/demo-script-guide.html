@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seiketsu AI - Live Demo Script & Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --seiketsu-primary: #000000;
+            --seiketsu-secondary: #0066cc;
+            --seiketsu-accent: #00cc66;
+            --seiketsu-warning: #ff6b35;
+            --seiketsu-background: #ffffff;
+            --seiketsu-surface: #f8fafc;
+            --seiketsu-text-primary: #1a202c;
+            --seiketsu-text-secondary: #4a5568;
+            --seiketsu-text-muted: #718096;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--seiketsu-text-primary);
+            background: var(--seiketsu-background);
+        }
+
+        .demo-guide {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px;
+            background: linear-gradient(135deg, var(--seiketsu-surface), white);
+            border-radius: 12px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--seiketsu-primary);
+            margin-bottom: 20px;
+        }
+
+        .voice-wave {
+            width: 24px;
+            height: 24px;
+            background: var(--seiketsu-accent);
+            border-radius: 50%;
+            margin-right: 12px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--seiketsu-primary);
+            margin-bottom: 15px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--seiketsu-primary);
+            margin: 40px 0 20px;
+            border-bottom: 2px solid var(--seiketsu-accent);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--seiketsu-secondary);
+            margin: 30px 0 15px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-flow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .demo-step {
+            background: var(--seiketsu-surface);
+            border-left: 4px solid var(--seiketsu-accent);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .script-block {
+            background: #000;
+            color: #00ff41;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .script-block:before {
+            content: 'LIVE DEMO';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: var(--seiketsu-accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .talking-points {
+            background: linear-gradient(135deg, #fff5f5, #fed7d7);
+            border-left: 4px solid var(--seiketsu-warning);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .success-metrics {
+            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+            border-left: 4px solid var(--seiketsu-accent);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .checklist {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .checklist li {
+            padding: 8px 0;
+            color: var(--seiketsu-text-secondary);
+        }
+
+        .checklist li:before {
+            content: "✓";
+            color: var(--seiketsu-accent);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .timing-note {
+            background: var(--seiketsu-surface);
+            border: 1px solid var(--seiketsu-accent);
+            padding: 15px;
+            border-radius: 6px;
+            font-style: italic;
+            color: var(--seiketsu-text-secondary);
+            margin: 15px 0;
+        }
+
+        .objection-handler {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .objection {
+            font-weight: 600;
+            color: var(--seiketsu-warning);
+            margin-bottom: 10px;
+        }
+
+        .response {
+            color: var(--seiketsu-text-secondary);
+        }
+
+        .demo-tech-setup {
+            background: var(--seiketsu-surface);
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px dashed var(--seiketsu-accent);
+        }
+
+        @media (max-width: 768px) {
+            .demo-flow {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-guide">
+        <div class="header">
+            <div class="logo">
+                <div class="voice-wave"></div>
+                Seiketsu AI
+            </div>
+            <h1>Live Demo Script & Sales Guide</h1>
+            <p>Complete guide for delivering compelling Seiketsu AI demonstrations that close enterprise deals</p>
+        </div>
+
+        <div class="section">
+            <h2>Pre-Demo Setup & Preparation</h2>
+            
+            <div class="demo-tech-setup">
+                <h3>Technical Setup Checklist (15 minutes before demo)</h3>
+                <ul class="checklist">
+                    <li>Test internet connection and backup options</li>
+                    <li>Launch Seiketsu AI demo environment</li>
+                    <li>Prepare test phone numbers for live calls</li>
+                    <li>Load prospect's CRM data into demo system</li>
+                    <li>Set up screen sharing with high-quality audio</li>
+                    <li>Have backup video recordings ready</li>
+                    <li>Test all integrations (CRM, calendar, etc.)</li>
+                </ul>
+            </div>
+
+            <h3>Prospect Research & Customization</h3>
+            <div class="talking-points">
+                <p><strong>Research Points (30 minutes before demo):</strong></p>
+                <ul>
+                    <li>Company size and current lead volume</li>
+                    <li>Existing CRM and tech stack</li>
+                    <li>Current lead response processes</li>
+                    <li>Pain points mentioned in discovery calls</li>
+                    <li>Competitive landscape and alternatives considered</li>
+                    <li>Decision-making process and timeline</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Demo Opening (5 minutes)</h2>
+            
+            <div class="demo-step">
+                <h3>Welcome & Agenda Setting</h3>
+                <p><strong>Your Script:</strong></p>
+                <p>"Thank you for joining today's demonstration. I'm excited to show you exactly how Seiketsu AI will transform your lead response and qualification process. Based on our previous conversation about [specific pain point], I've customized today's demo to show you solutions for [their specific challenges]."</p>
+                
+                <p><strong>Agenda:</strong></p>
+                <ul class="checklist">
+                    <li>Live lead qualification demonstration (10 minutes)</li>
+                    <li>Your custom ROI analysis (5 minutes)</li>
+                    <li>Integration with your existing systems (5 minutes)</li>
+                    <li>Q&A and next steps (10 minutes)</li>
+                </ul>
+            </div>
+
+            <div class="timing-note">
+                <strong>Timing Note:</strong> Keep opening brief. Prospects want to see the product in action, not hear more sales talk.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Core Demo Flow (15 minutes)</h2>
+
+            <div class="demo-flow">
+                <div class="demo-step">
+                    <h3>Scenario 1: Inbound Lead Response</h3>
+                    <div class="script-block">
+> New lead from [prospect's website/Zillow]: 
+  "Interested in 3BR house under $400K"
+
+> Seiketsu AI responds in 15 seconds:
+  "Hi Jennifer! Thanks for your interest in 
+   the Maple Street listing. I'm Sarah with 
+   [Prospect's Company]. Do you have 2 minutes 
+   to discuss what you're looking for?"
+
+> Lead: "Yes, I need to move by June"
+
+> Seiketsu AI: "Perfect timing! Are you 
+   pre-approved for financing, and what's 
+   your ideal move-in timeline?"
+                    </div>
+                    <div class="talking-points">
+                        <p><strong>Key Points to Emphasize:</strong></p>
+                        <ul>
+                            <li>30-second response time vs. your current [X hours]</li>
+                            <li>Natural conversation flow</li>
+                            <li>Immediate qualification questions</li>
+                            <li>Uses your company branding</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="demo-step">
+                    <h3>Scenario 2: Appointment Scheduling</h3>
+                    <div class="script-block">
+> Seiketsu AI: "I have 3 properties that 
+   match your criteria. Would you like to 
+   see them this week?"
+
+> Lead: "Yes, weekend would be perfect"
+
+> Seiketsu AI: "Great! I'm checking 
+   [Agent Name]'s calendar now... I can 
+   schedule you for Saturday at 2 PM or 
+   Sunday at 11 AM. Which works better?"
+
+> RESULT: Appointment booked directly 
+   into agent calendar with full context
+                    </div>
+                    <div class="success-metrics">
+                        <p><strong>Success Metrics to Highlight:</strong></p>
+                        <ul>
+                            <li>67% of conversations result in appointments</li>
+                            <li>94% appointment show rate</li>
+                            <li>Complete conversation transcript provided</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timing-note">
+                <strong>Demo Tip:</strong> Use actual phone calls when possible. If not, use high-quality recorded examples with their specific property data.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Advanced Features Demo (10 minutes)</h2>
+
+            <h3>Multi-Channel Integration</h3>
+            <div class="demo-step">
+                <div class="script-block">
+> Show prospect their CRM integration:
+  - Lead automatically created
+  - Qualification notes populated
+  - Next follow-up scheduled
+  - Agent notified instantly
+  
+> Show calendar integration:
+  - Appointment created with property details
+  - Driving directions included
+  - Prospect contact info attached
+                </div>
+            </div>
+
+            <h3>Analytics Dashboard</h3>
+            <div class="demo-step">
+                <p><strong>Show their customized dashboard with:</strong></p>
+                <ul class="checklist">
+                    <li>Lead response times (current vs. projected)</li>
+                    <li>Qualification rates by source</li>
+                    <li>Appointment conversion rates</li>
+                    <li>Agent performance metrics</li>
+                    <li>ROI calculations with their actual numbers</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Custom ROI Analysis (5 minutes)</h2>
+            
+            <div class="success-metrics">
+                <h3>Personalized ROI Calculation</h3>
+                <p><strong>Your Script:</strong></p>
+                <p>"Now let me show you the numbers specific to your business. Based on your [X leads/month] and current [X%] conversion rate, here's your projected ROI with Seiketsu AI:"</p>
+                
+                <div class="script-block" style="color: #00ff41;">
+Current State:
+- [X] leads/month × [X%] contact rate × [X%] conversion = [X] deals/month
+- Monthly revenue: $[X]
+
+With Seiketsu AI:
+- [X] leads/month × 89% contact rate × 34% conversion = [X] deals/month  
+- Monthly revenue: $[X]
+- Additional revenue: $[X]/month
+- Investment: $[X]/month
+- Net ROI: [X]%
+- Payback period: [X] days
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Common Objections & Responses</h2>
+
+            <div class="objection-handler">
+                <div class="objection">"Our agents prefer to handle leads personally"</div>
+                <div class="response"><strong>Response:</strong> "Absolutely, and they still will! Seiketsu AI doesn't replace your agents - it qualifies leads so agents spend time with serious buyers instead of tire kickers. Your agents will love getting pre-qualified appointments instead of cold leads. Let me show you how Agent Sarah increased her closing rate from 12% to 34% with more qualified prospects."</div>
+            </div>
+
+            <div class="objection-handler">
+                <div class="objection">"This seems too expensive for our budget"</div>
+                <div class="response"><strong>Response:</strong> "I understand budget concerns. Let's look at this differently - what's one additional closed transaction worth to you? [Wait for answer] So if Seiketsu AI helps you close just one extra deal per month, it pays for itself with $[X] left over. And we're projecting [X] additional closings monthly for your volume."</div>
+            </div>
+
+            <div class="objection-handler">
+                <div class="objection">"What if prospects don't like talking to AI?"</div>
+                <div class="response"><strong>Response:</strong> "Great question! In our testing, 89% of prospects don't realize they're talking to AI initially - the conversation is that natural. But here's the key: they get instant response instead of waiting hours or days. Even if they prefer humans, they appreciate the immediate attention and seamless handoff to your agents when needed."</div>
+            </div>
+
+            <div class="objection-handler">
+                <div class="objection">"We need to think about it"</div>
+                <div class="response"><strong>Response:</strong> "Of course, this is an important decision. What specific concerns do you need to work through? [Listen] I can address those right now, and remember - we guarantee 3x ROI within 90 days or full refund. What's the risk in starting your free trial this week while you continue evaluating?"</div>
+            </div>
+
+            <div class="objection-handler">
+                <div class="objection">"How do we know this will integrate with our systems?"</div>
+                <div class="response"><strong>Response:</strong> "Excellent point. Let me show you our integration with [their specific CRM]. [Show actual integration] We handle all the technical setup, and I guarantee it will work with your current systems or we'll build custom integrations at no charge. Our success depends on your success."</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Closing & Next Steps (5 minutes)</h2>
+
+            <h3>Trial Close Techniques</h3>
+            <div class="demo-step">
+                <p><strong>Assumptive Close:</strong></p>
+                <p>"Based on what you've seen, when would you like to start your implementation? We can have you up and running within 2 weeks."</p>
+
+                <p><strong>Alternative Close:</strong></p>
+                <p>"Would you prefer to start with our 30-day pilot program or go straight to full implementation?"</p>
+
+                <p><strong>Urgency Close:</strong></p>
+                <p>"Every day you wait, qualified leads are going to competitors who respond faster. How many potential deals is that costing you this month?"</p>
+            </div>
+
+            <h3>Implementation Timeline</h3>
+            <div class="demo-flow">
+                <div class="demo-step">
+                    <h3>Week 1: Setup</h3>
+                    <ul class="checklist">
+                        <li>CRM integration</li>
+                        <li>Voice training</li>
+                        <li>Team onboarding</li>
+                    </ul>
+                </div>
+                <div class="demo-step">
+                    <h3>Week 2: Go Live</h3>
+                    <ul class="checklist">
+                        <li>Pilot launch</li>
+                        <li>Performance monitoring</li>
+                        <li>Full activation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Post-Demo Follow-Up</h2>
+            
+            <div class="talking-points">
+                <h3>Immediate Follow-Up (within 2 hours)</h3>
+                <ul class="checklist">
+                    <li>Send demo recording and slides</li>
+                    <li>Provide custom ROI calculation document</li>
+                    <li>Include technical integration specifications</li>
+                    <li>Schedule follow-up call within 48 hours</li>
+                </ul>
+
+                <h3>Value-Add Follow-Up Materials</h3>
+                <ul class="checklist">
+                    <li>Industry benchmark report</li>
+                    <li>Customer success case studies</li>
+                    <li>Implementation timeline and project plan</li>
+                    <li>Security and compliance documentation</li>
+                    <li>Team training materials preview</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Success Metrics & Demo KPIs</h2>
+
+            <div class="success-metrics">
+                <h3>Track These Demo Performance Metrics:</h3>
+                <ul class="checklist">
+                    <li><strong>Demo-to-Trial Conversion:</strong> Target 60%+</li>
+                    <li><strong>Trial-to-Close Rate:</strong> Target 80%+</li>
+                    <li><strong>Average Deal Size:</strong> Track by prospect size</li>
+                    <li><strong>Time from Demo to Close:</strong> Target 14 days</li>
+                    <li><strong>Most Common Objections:</strong> Prepare better responses</li>
+                </ul>
+
+                <h3>Demo Quality Indicators:</h3>
+                <ul class="checklist">
+                    <li>Prospect asks specific technical questions</li>
+                    <li>Discussion of implementation timeline</li>
+                    <li>Introduction of additional stakeholders</li>
+                    <li>Request for custom ROI analysis</li>
+                    <li>Questions about team training and onboarding</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Demo Backup Plans</h2>
+
+            <div class="demo-tech-setup">
+                <h3>Technical Backup Options</h3>
+                <ul class="checklist">
+                    <li><strong>Internet Issues:</strong> Pre-recorded HD demo videos</li>
+                    <li><strong>Live Call Failures:</strong> High-quality audio recordings</li>
+                    <li><strong>CRM Integration Issues:</strong> Screenshots and mockups</li>
+                    <li><strong>Screen Share Problems:</strong> Backup laptop with mobile hotspot</li>
+                    <li><strong>Prospect Late/Missing:</strong> Personalized follow-up sequence</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="timing-note">
+            <strong>Remember:</strong> The best demos focus on the prospect's specific problems and show clear solutions. Customize every demo based on your discovery conversations and research.
+        </div>
+
+    </div>
+</body>
+</html>

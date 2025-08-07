@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seiketsu AI ROI Calculator - Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#6b7280',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        error: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Header -->
+        <div class="text-center py-12 bg-white rounded-lg shadow-sm mb-8">
+            <h1 class="text-5xl font-bold text-gray-900 mb-4">
+                Seiketsu AI ROI Calculator Suite
+            </h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                Calculate your exact ROI with our interactive calculators designed for different real estate sectors. 
+                See how Seiketsu AI delivers 200-400% ROI within 30 days.
+            </p>
+        </div>
+
+        <!-- Calculator Tabs -->
+        <div class="bg-white rounded-lg shadow-sm p-8 mb-8">
+            <div class="flex justify-center space-x-8 mb-8">
+                <button onclick="showCalculator('residential')" id="tab-residential" class="tab-button active">
+                    🏠 Real Estate Agency
+                </button>
+                <button onclick="showCalculator('property')" id="tab-property" class="tab-button">
+                    🏢 Property Management  
+                </button>
+                <button onclick="showCalculator('commercial')" id="tab-commercial" class="tab-button">
+                    🏗️ Commercial Real Estate
+                </button>
+            </div>
+
+            <!-- Real Estate Agency Calculator -->
+            <div id="residential-calculator" class="calculator-panel">
+                <h2 class="text-2xl font-bold mb-6">Real Estate Agency ROI Calculator</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Inputs -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Number of Agents</label>
+                            <input type="number" id="agents" value="10" class="w-full px-4 py-2 border rounded-lg" onchange="calculateResidentialROI()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Average Commission per Deal</label>
+                            <input type="number" id="avgCommission" value="25000" class="w-full px-4 py-2 border rounded-lg" onchange="calculateResidentialROI()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Leads per Month</label>
+                            <input type="number" id="leadsPerMonth" value="150" class="w-full px-4 py-2 border rounded-lg" onchange="calculateResidentialROI()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Current Conversion Rate (%)</label>
+                            <input type="number" id="conversionRate" value="3.5" step="0.1" class="w-full px-4 py-2 border rounded-lg" onchange="calculateResidentialROI()">
+                        </div>
+                    </div>
+                    
+                    <!-- Results -->
+                    <div class="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Seiketsu AI Impact</h3>
+                        <div class="space-y-4">
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-3xl font-bold text-green-600" id="monthlyROI">287%</div>
+                                <div class="text-sm text-gray-600">Monthly ROI</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-2xl font-bold text-blue-600" id="additionalRevenue">$78,400</div>
+                                <div class="text-sm text-gray-600">Additional Monthly Revenue</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-2xl font-bold text-purple-600" id="efficiency">+65%</div>
+                                <div class="text-sm text-gray-600">Agent Efficiency Gain</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 p-4 bg-white/50 rounded-lg">
+                            <h4 class="font-semibold mb-2">Key Improvements:</h4>
+                            <ul class="text-sm space-y-1">
+                                <li>✅ 180% higher conversion rates</li>
+                                <li>✅ 24/7 lead engagement</li>
+                                <li>✅ 65% productivity improvement</li>
+                                <li>✅ 45% cost reduction</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property Management Calculator -->
+            <div id="property-calculator" class="calculator-panel hidden">
+                <h2 class="text-2xl font-bold mb-6">Property Management ROI Calculator</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Number of Properties</label>
+                            <input type="number" id="properties" value="250" class="w-full px-4 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Average Monthly Rent</label>
+                            <input type="number" id="avgRent" value="1800" class="w-full px-4 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Tenant Interactions/Month</label>
+                            <input type="number" id="interactions" value="45" class="w-full px-4 py-2 border rounded-lg">
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Operational Impact</h3>
+                        <div class="space-y-4">
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-3xl font-bold text-emerald-600">245%</div>
+                                <div class="text-sm text-gray-600">Monthly ROI</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-2xl font-bold text-teal-600">$7,800</div>
+                                <div class="text-sm text-gray-600">Monthly Cost Savings</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-2xl font-bold text-blue-600">92%</div>
+                                <div class="text-sm text-gray-600">Tenant Satisfaction</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Commercial Real Estate Calculator -->
+            <div id="commercial-calculator" class="calculator-panel hidden">
+                <h2 class="text-2xl font-bold mb-6">Commercial Real Estate ROI Calculator</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Average Deal Size</label>
+                            <input type="number" id="dealSize" value="2500000" class="w-full px-4 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Deals per Year</label>
+                            <input type="number" id="dealsPerYear" value="24" class="w-full px-4 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Sales Cycle (Days)</label>
+                            <input type="number" id="salesCycle" value="180" class="w-full px-4 py-2 border rounded-lg">
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-violet-50 to-purple-50 rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Revenue Acceleration</h3>
+                        <div class="space-y-4">
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-3xl font-bold text-violet-600">412%</div>
+                                <div class="text-sm text-gray-600">Annual ROI</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-2xl font-bold text-purple-600">$1.8M</div>
+                                <div class="text-sm text-gray-600">Additional Revenue</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-2xl font-bold text-rose-600">-42%</div>
+                                <div class="text-sm text-gray-600">Sales Cycle Reduction</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-lg p-12 text-center">
+            <h2 class="text-3xl font-bold mb-4">Ready to Transform Your Business?</h2>
+            <p class="text-xl mb-8 opacity-90">
+                Join hundreds of real estate professionals who've already achieved 200-400% ROI with Seiketsu AI
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                    Start Free 14-Day Trial
+                </button>
+                <button class="border border-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors">
+                    Schedule Live Demo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showCalculator(type) {
+            // Hide all calculators
+            document.querySelectorAll('.calculator-panel').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected calculator
+            document.getElementById(type + '-calculator').classList.remove('hidden');
+            document.getElementById('tab-' + type).classList.add('active');
+        }
+
+        function calculateResidentialROI() {
+            const agents = parseFloat(document.getElementById('agents').value) || 10;
+            const avgCommission = parseFloat(document.getElementById('avgCommission').value) || 25000;
+            const leadsPerMonth = parseFloat(document.getElementById('leadsPerMonth').value) || 150;
+            const conversionRate = parseFloat(document.getElementById('conversionRate').value) || 3.5;
+            
+            // Seiketsu improvements
+            const improvedConversionRate = conversionRate * 2.8; // 180% improvement
+            const seiketsuCost = agents * 299; // $299 per agent/month
+            
+            // Current vs improved performance
+            const currentDeals = (leadsPerMonth * conversionRate) / 100;
+            const improvedDeals = (leadsPerMonth * improvedConversionRate) / 100;
+            const additionalRevenue = (improvedDeals - currentDeals) * avgCommission;
+            
+            // ROI calculation
+            const monthlyROI = ((additionalRevenue - seiketsuCost) / seiketsuCost) * 100;
+            
+            // Update display
+            document.getElementById('monthlyROI').textContent = Math.round(monthlyROI) + '%';
+            document.getElementById('additionalRevenue').textContent = '$' + Math.round(additionalRevenue).toLocaleString();
+            document.getElementById('efficiency').textContent = '+65%';
+        }
+
+        // Initialize with default calculations
+        calculateResidentialROI();
+    </script>
+
+    <style>
+        .tab-button {
+            @apply px-6 py-3 rounded-lg font-semibold transition-colors border-2 border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-600;
+        }
+        .tab-button.active {
+            @apply border-blue-500 bg-blue-500 text-white;
+        }
+        .calculator-panel {
+            @apply transition-all duration-300;
+        }
+    </style>
+</body>
+</html>

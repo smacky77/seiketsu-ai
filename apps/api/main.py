@@ -25,6 +25,12 @@ from app.core.middleware import (
     TenantContextMiddleware,
     SecurityHeadersMiddleware
 )
+from app.core.security_middleware import (
+    AdvancedRateLimitMiddleware,
+    TenantIsolationMiddleware,
+    ThreatDetectionMiddleware,
+    DataValidationMiddleware
+)
 
 # Import API routes
 from app.api.v1.auth import router as auth_router
@@ -36,6 +42,7 @@ from app.api.v1.voice_agents import router as voice_agents_router
 from app.api.v1.properties import router as properties_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.voice import router as voice_router
+from app.api.v1.voice_enhanced import router as voice_enhanced_router
 from app.api.v1.webhooks import router as webhooks_router
 from app.api.v1.admin import router as admin_router
 
@@ -112,7 +119,9 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-# Add security headers middleware
+# Add enhanced security middleware stack
+app.add_middleware(DataValidationMiddleware)
+app.add_middleware(ThreatDetectionMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Add CORS middleware
@@ -131,11 +140,11 @@ app.add_middleware(
     allowed_hosts=settings.ALLOWED_HOSTS
 )
 
-# Add rate limiting middleware
-app.add_middleware(RateLimitMiddleware)
+# Add advanced rate limiting middleware
+app.add_middleware(AdvancedRateLimitMiddleware)
 
-# Add tenant context middleware for multi-tenant support
-app.add_middleware(TenantContextMiddleware)
+# Add tenant isolation middleware for multi-tenant support
+app.add_middleware(TenantIsolationMiddleware)
 
 # Add error handling middleware
 app.add_middleware(ErrorHandlingMiddleware)
@@ -272,6 +281,13 @@ app.include_router(
 
 app.include_router(
     voice_router,
+    prefix="/api/v1/voice",
+    tags=["Voice Processing"]
+)
+
+# Include enhanced voice endpoints
+app.include_router(
+    voice_enhanced_router,
     prefix="/api/v1/voice",
     tags=["Voice Processing"]
 )

@@ -293,7 +293,7 @@ describe('Voice AI Performance Tests', () => {
         const { render } = await import('../utils/test-utils')
         const { VoiceAgentControlCenter } = await import('@/components/enterprise/voice-agent-control-center')
         
-        return render(<VoiceAgentControlCenter agentId="perf-test" />)
+        return render(VoiceAgentControlCenter({ agentId: "perf-test" }))
       })
 
       expect(renderTime).toBeLessThan(PERFORMANCE_BENCHMARKS.COMPONENT_RENDER_TIME)

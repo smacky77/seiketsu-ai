@@ -1,0 +1,52 @@
+{
+  "critical_issue_acknowledgment": {
+    "subject": "🚨 URGENT: Your Seiketsu AI Issue - Immediate Response Team Activated",
+    "template": "Hi {client_name},\n\nI understand this critical issue with {issue_description} is severely impacting your operations. I want you to know that:\n\n✅ Your issue has been escalated to our senior engineering team\n✅ We have assigned a dedicated engineer to resolve this immediately\n✅ You will receive updates every 15 minutes until resolved\n✅ Our CTO has been notified and is personally overseeing the resolution\n\nImmediate next steps:\n1. Our engineer {engineer_name} will call you within 5 minutes\n2. We're preparing a hotfix for deployment within the hour\n3. We'll provide a full post-mortem and prevention plan\n\nYour success is our absolute priority. We will not rest until this is resolved.\n\nDirect escalation line: {emergency_phone}\nDedicated Slack channel: #{client_name}-emergency\n\n{support_manager_name}\nSupport Manager, Seiketsu AI",
+    "follow_up_interval": "15m",
+    "escalation_level": "executive"
+  },
+  
+  "api_integration_help": {
+    "subject": "API Integration Support - Let's Get You Connected",
+    "template": "Hi {client_name},\n\nI see you're working on integrating our API - exciting! Let me help you get this running smoothly.\n\n📋 **Quick Diagnostic:**\n- Are you using our latest SDK version {latest_version}?\n- Have you configured your authentication headers correctly?\n- Which endpoint are you having trouble with?\n\n🛠️ **Immediate Help:**\n1. Check our updated integration guide: {integration_guide_url}\n2. Try our API testing playground: {playground_url}\n3. Review these common integration patterns: {patterns_url}\n\n🎯 **Let's Schedule a Call:**\nI'd love to walk through this with you personally. Here's my calendar: {calendar_link}\n\n💡 **Pro Tip:** Many clients save 2+ hours by starting with our Postman collection: {postman_url}\n\nI'm here until this works perfectly for you!\n\n{support_engineer_name}\nTechnical Support Engineer",
+    "attachments": ["api_quickstart.pdf", "postman_collection.json"],
+    "follow_up_interval": "2h"
+  },
+  
+  "voice_agent_configuration": {
+    "subject": "Voice Agent Setup - Your AI Assistant Awaits",
+    "template": "Hi {client_name},\n\nGreat choice setting up your voice agent! This is where the magic happens. 🎙️\n\n🚀 **Quick Setup Checklist:**\n□ ElevenLabs API key configured\n□ Voice model selected (I recommend {recommended_voice})\n□ Real estate prompts customized\n□ Lead qualification rules set\n\n📹 **Watch & Learn:**\n- Voice setup walkthrough (8min): {video_url}\n- Advanced configuration guide: {advanced_guide_url}\n\n⚡ **Fast Track Option:**\nI can configure your voice agent in a 15-minute screen share. Book here: {screen_share_link}\n\n🎯 **Success Metrics to Track:**\n- Lead qualification rate (target: >85%)\n- Conversation completion rate (target: >90%)\n- Client satisfaction scores\n\nLet's get your voice agent qualifying leads like a seasoned pro!\n\n{voice_specialist_name}\nVoice Technology Specialist",
+    "follow_up_interval": "1d"
+  },
+  
+  "billing_inquiry": {
+    "subject": "Billing Inquiry - Quick Resolution Coming Up",
+    "template": "Hi {client_name},\n\nThanks for reaching out about your billing. I want to resolve this quickly and clearly.\n\n📊 **Your Account Summary:**\n- Plan: {current_plan}\n- Usage: {current_usage}\n- Next billing: {next_billing_date}\n\n💰 **Regarding Your Inquiry:**\nI've reviewed {inquiry_details} and here's what I found:\n{resolution_details}\n\n✅ **Action Taken:**\n{actions_completed}\n\n🔄 **If You Need Changes:**\n- Upgrade/downgrade: {plan_change_url}\n- Billing preferences: {billing_settings_url}\n- Payment methods: {payment_url}\n\n📞 **Direct Line:** For any billing questions, my direct number is {billing_phone}\n\nYour trust in our platform means everything to us.\n\n{billing_specialist_name}\nBilling & Accounts Specialist",
+    "follow_up_interval": "3d"
+  },
+  
+  "feature_request": {
+    "subject": "Feature Request Received - You're Shaping Our Roadmap!",
+    "template": "Hi {client_name},\n\nThank you for this fantastic feature suggestion: '{feature_description}'\n\nThis is exactly the kind of insight that makes our platform better! 🌟\n\n📋 **What Happens Next:**\n1. I've logged this in our product roadmap (Ticket: {ticket_number})\n2. Our product team will review within 48 hours\n3. You'll get updates as we progress\n\n🎯 **Similar Requests:**\n{similar_requests_count} other clients have requested similar functionality, so you're definitely onto something valuable!\n\n⚡ **Potential Workaround:**\nWhile we build this feature, you might find {workaround_suggestion} helpful for now.\n\n📊 **Influence Our Roadmap:**\nVote on upcoming features: {roadmap_url}\nJoin our beta program: {beta_signup_url}\n\nKeep the great ideas coming - you're helping us build the future of real estate AI!\n\n{product_specialist_name}\nProduct Success Specialist",
+    "follow_up_interval": "1w"
+  },
+  
+  "onboarding_welcome": {
+    "subject": "🎉 Welcome to Seiketsu AI - Your Success Journey Starts Now!",
+    "template": "Hi {client_name},\n\nWelcome to the Seiketsu AI family! I'm {success_manager_name}, your dedicated Customer Success Manager, and I'm thrilled to help you maximize your ROI from day one.\n\n🎯 **Your 30-Day Success Plan:**\n\nWeek 1: Foundation Setup\n□ API integration (I'll personally guide you)\n□ Voice agent configuration\n□ Team training session\n□ Success metrics baseline\n\nWeek 2: Optimization\n□ Lead flow analysis\n□ Performance tuning\n□ Advanced features activation\n□ First success review\n\nWeek 3: Scale & Expand\n□ Multi-location setup (if applicable)\n□ Advanced integrations\n□ Team workflow optimization\n□ ROI measurement\n\nWeek 4: Mastery\n□ Best practices implementation\n□ Success celebration\n□ Future roadmap planning\n□ Long-term strategy session\n\n📞 **Your Direct Lines:**\n- My cell: {manager_cell} (text anytime!)\n- Emergency support: {emergency_line}\n- Dedicated Slack: #{client_name}-success\n\n📅 **Let's Start:** I've scheduled our kickoff call for {kickoff_date}. Calendar invite coming separately.\n\n🎖️ **Success Guarantee:** If you're not seeing clear ROI within 30 days, we'll work extra hours at no charge until you are.\n\nLet's make this the best decision you've made for your business!\n\n{success_manager_name}\nCustomer Success Manager\nDirect: {manager_phone} | Text: {manager_cell}",
+    "follow_up_interval": "2d"
+  },
+  
+  "performance_optimization": {
+    "subject": "Performance Insights - Let's Optimize Your Results",
+    "template": "Hi {client_name},\n\nI've been analyzing your Seiketsu AI performance data, and I have some exciting optimization opportunities! 📈\n\n📊 **Current Performance:**\n- Lead qualification rate: {qualification_rate}%\n- Conversion rate: {conversion_rate}%\n- Response time: {response_time}\n- Client satisfaction: {satisfaction_score}\n\n🎯 **Optimization Opportunities:**\n\n1. **Voice Script Tuning** (+{voice_improvement}% potential)\n   - Recommended adjustments: {voice_recommendations}\n   - A/B test suggestion: {ab_test_idea}\n\n2. **Lead Scoring Refinement** (+{scoring_improvement}% potential)\n   - Update criteria: {scoring_updates}\n   - New qualification questions: {new_questions}\n\n3. **Integration Enhancement** (+{integration_improvement}% efficiency)\n   - CRM sync optimization: {crm_suggestions}\n   - Workflow automation: {workflow_ideas}\n\n⚡ **Quick Win:** Implementing {quick_win} could improve your results by {quick_win_impact}% within 48 hours.\n\n📞 **Optimization Session:** Let's schedule a 30-minute call to implement these improvements: {calendar_link}\n\n🏆 **Success Story:** Similar optimizations helped {success_story_client} achieve {success_story_result}.\n\nReady to take your results to the next level?\n\n{optimization_specialist_name}\nPerformance Optimization Specialist",
+    "follow_up_interval": "1w"
+  },
+  
+  "emergency_response": {
+    "subject": "🚨 EMERGENCY RESPONSE ACTIVATED - Seiketsu AI Crisis Team",
+    "template": "URGENT RESPONSE FOR {client_name}\n\n⚡ IMMEDIATE STATUS:\n- Issue: {emergency_description}\n- Impact: {impact_assessment}\n- Response team activated: {response_time}\n- Estimated resolution: {eta}\n\n🚨 ACTIONS IN PROGRESS:\n✅ Senior engineer assigned: {engineer_name}\n✅ Emergency hotline activated: {emergency_phone}\n✅ Real-time monitoring enabled\n✅ Executive team notified\n\n📞 DIRECT CONTACT:\n- Emergency line: {emergency_phone}\n- Engineer direct: {engineer_phone}\n- Slack crisis channel: #{client_name}-crisis\n\n⏱️ UPDATE SCHEDULE:\nYou will receive updates every 15 minutes until resolution.\nNext update: {next_update_time}\n\n🛠️ IMMEDIATE WORKAROUND:\n{workaround_instructions}\n\n💪 OUR COMMITMENT:\nWe will not rest until this is resolved. Your business continuity is our absolute priority.\n\n{crisis_manager_name}\nCrisis Response Manager\nDirect: {crisis_phone} | Emergency: {emergency_line}",
+    "follow_up_interval": "15m",
+    "priority": "P0-CRITICAL"
+  }
+}

@@ -30,10 +30,44 @@ websockets==12.0
 # Background tasks
 celery==5.3.4
 kombu==5.3.4
+flower==2.0.1  # Celery monitoring
 
-# Voice processing
-elevenlabs==0.2.27
+# AI and Machine Learning
 openai==1.3.5
+elevenlabs==0.2.27
+numpy==1.24.3
+scipy==1.11.4
+scikit-learn==1.3.2
+textblob==0.17.1
+vaderSentiment==3.3.2
+
+# Enhanced voice processing
+pydub==0.25.1
+soundfile==0.12.1
+librosa==0.10.1
+noisereduce==3.0.0
+webrtcvad==2.0.10
+speechrecognition==3.10.0
+
+# Real-time audio streaming
+pyaudio==0.2.11
+portaudio==19.6.0
+
+# Advanced NLP and emotion detection
+transformers==4.35.2
+torch==2.1.1
+sentence-transformers==2.2.2
+nltk==3.8.1
+spacy==3.7.2
+
+# Voice quality enhancement
+rnnoise==1.0.0
+numba==0.58.1
+
+# Conversation intelligence
+anthropics==0.8.1
+langchain==0.0.335
+langchain-openai==0.0.2
 
 # Real estate integrations
 supabase==2.0.2
@@ -56,7 +90,46 @@ aiofiles==23.2.1
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-mock==3.12.0
+pytest-cov==4.1.0
+pytest-xdist==3.5.0
+pytest-benchmark==4.0.0
+pytest-timeout==2.2.0
+pytest-html==4.1.1
+pytest-bdd==7.0.1
+pytest-env==1.1.3
 httpx==0.25.2
+factory-boy==3.3.0
+faker==20.1.0
+
+# Performance and Load Testing
+locust==2.17.0
+aioresponses==0.7.4
+pytest-profiling==1.7.0
+
+# Security Testing
+bandit==1.7.5
+safety==2.3.4
+semgrep==1.45.0
+
+# Code Quality
+coverage==7.3.2
+pytest-clarity==1.0.1
+pytest-sugar==0.9.7
+
+# AWS SDK
+boto3==1.34.34
+botocore==1.34.34
+
+# Additional ML and Data Processing
+scikit-learn==1.3.2
+numpy==1.24.3
+pandas==2.1.4
+
+# Enhanced HTTP client
+httpx[http2]==0.25.2
+
+# Data validation
+marshmallow==3.20.2
 
 # Development
 black==23.11.0

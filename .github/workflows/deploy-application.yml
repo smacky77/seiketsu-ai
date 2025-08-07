@@ -1,0 +1,492 @@
+# Seiketsu AI - Application Deployment Pipeline
+# Container Studio integrated deployment for Next.js frontend and FastAPI backend
+
+name: Deploy Application
+
+on:
+  push:
+    branches:
+      - main
+      - production
+    paths:
+      - 'apps/**'
+      - 'Dockerfile*'
+      - '.github/workflows/deploy-application.yml'
+  pull_request:
+    branches:
+      - main
+      - production
+    paths:
+      - 'apps/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      component:
+        description: 'Component to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - frontend
+          - backend
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  ENVIRONMENT: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.changes.outputs.frontend }}
+      backend: ${{ steps.changes.outputs.backend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'apps/web/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            backend:
+              - 'apps/api/**'
+              - 'apps/api/requirements.txt'
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event.inputs.component == 'all' || github.event.inputs.component == 'frontend'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: |
+          cd apps/web
+          npm run lint
+          
+      - name: Run type checking
+        run: |
+          cd apps/web
+          npm run type-check
+          
+      - name: Run unit tests
+        run: |
+          cd apps/web
+          npm run test:ci
+          
+      - name: Run accessibility tests
+        run: |
+          cd apps/web
+          npm run test:accessibility
+          
+      - name: Run performance tests
+        run: |
+          cd apps/web
+          npm run test:performance
+          
+      - name: Build application
+        run: |
+          cd apps/web
+          npm run build
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-${{ env.ENVIRONMENT }}
+          path: apps/web/.next
+          retention-days: 7
+
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event.inputs.component == 'all' || github.event.inputs.component == 'backend'
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'apps/api/requirements.txt'
+          
+      - name: Install dependencies
+        run: |
+          cd apps/api
+          pip install -r requirements.txt
+          
+      - name: Run linting
+        run: |
+          cd apps/api
+          black --check .
+          isort --check-only .
+          
+      - name: Run type checking
+        run: |
+          cd apps/api
+          mypy .
+          
+      - name: Run security scan
+        run: |
+          cd apps/api
+          bandit -r . -f json -o bandit-report.json
+          safety check
+        continue-on-error: true
+        
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          ENVIRONMENT: test
+        run: |
+          cd apps/api
+          pytest --cov=. --cov-report=xml --cov-report=html
+          
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: apps/api/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-backend]
+    if: always() && (needs.test-frontend.result == 'success' || needs.test-backend.result == 'success')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  build-and-push-backend:
+    name: Build and Push Backend
+    runs-on: ubuntu-latest
+    needs: [test-backend, security-scan]
+    if: |
+      always() && 
+      needs.test-backend.result == 'success' &&
+      (needs.changes.outputs.backend == 'true' || github.event.inputs.component == 'all' || github.event.inputs.component == 'backend')
+    
+    outputs:
+      image-uri: ${{ steps.build.outputs.image-uri }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        
+      - name: Build and push Docker image
+        id: build
+        run: |
+          # Build image
+          IMAGE_TAG=${GITHUB_SHA:0:7}
+          IMAGE_URI=$ECR_REGISTRY/seiketsu-ai-api:$IMAGE_TAG
+          
+          docker build -t $IMAGE_URI -f apps/api/Dockerfile apps/api/
+          
+          # Push image
+          docker push $IMAGE_URI
+          
+          # Also tag as latest for the environment
+          docker tag $IMAGE_URI $ECR_REGISTRY/seiketsu-ai-api:$ENVIRONMENT-latest
+          docker push $ECR_REGISTRY/seiketsu-ai-api:$ENVIRONMENT-latest
+          
+          echo "image-uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+          
+      - name: Scan Docker image
+        run: |
+          # Run Trivy scan on the built image
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image ${{ steps.build.outputs.image-uri }}
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: [test-frontend, security-scan]
+    if: |
+      always() && 
+      needs.test-frontend.result == 'success' &&
+      (needs.changes.outputs.frontend == 'true' || github.event.inputs.component == 'all' || github.event.inputs.component == 'frontend')
+    environment: ${{ env.ENVIRONMENT }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build-${{ env.ENVIRONMENT }}
+          path: apps/web/.next
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Export static files
+        run: |
+          cd apps/web
+          npm run build
+          npm run export
+          
+      - name: Deploy to S3
+        run: |
+          aws s3 sync apps/web/out/ s3://seiketsu-ai-$ENVIRONMENT-frontend/ --delete
+          
+      - name: Invalidate CloudFront
+        run: |
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Aliases.Items, 'seiketsu-ai-$ENVIRONMENT.com')].Id" --output text)
+          if [ ! -z "$DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+          fi
+
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: [build-and-push-backend]
+    if: always() && needs.build-and-push-backend.result == 'success'
+    environment: ${{ env.ENVIRONMENT }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Update ECS service
+        run: |
+          # Update task definition with new image
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition seiketsu-ai-$ENVIRONMENT-api --query taskDefinition)
+          
+          # Update the image URI in the task definition
+          NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "${{ needs.build-and-push-backend.outputs.image-uri }}" '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+          
+          # Register new task definition
+          NEW_TASK_DEF_ARN=$(echo $NEW_TASK_DEFINITION | aws ecs register-task-definition --cli-input-json file:///dev/stdin --query taskDefinition.taskDefinitionArn --output text)
+          
+          # Update ECS service
+          aws ecs update-service --cluster seiketsu-ai-$ENVIRONMENT-cluster --service seiketsu-ai-$ENVIRONMENT-api-service --task-definition $NEW_TASK_DEF_ARN
+          
+          # Wait for deployment to complete
+          aws ecs wait services-stable --cluster seiketsu-ai-$ENVIRONMENT-cluster --services seiketsu-ai-$ENVIRONMENT-api-service
+          
+      - name: Verify deployment
+        run: |
+          # Get ALB DNS name
+          ALB_DNS=$(aws elbv2 describe-load-balancers --names seiketsu-ai-$ENVIRONMENT-alb --query 'LoadBalancers[0].DNSName' --output text)
+          
+          # Wait for health check
+          echo "Waiting for health check..."
+          for i in {1..30}; do
+            if curl -f https://$ALB_DNS/health; then
+              echo "Health check passed!"
+              break
+            fi
+            echo "Attempt $i failed, retrying in 10 seconds..."
+            sleep 10
+          done
+
+  container-studio-sync:
+    name: Container Studio Sync
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always() && (needs.deploy-frontend.result == 'success' || needs.deploy-backend.result == 'success')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Sync with Container Studio
+        run: |
+          echo "Syncing deployment status with Container Studio..."
+          # Container Studio API integration would be implemented here
+          curl -X POST "https://api.containerstudio.com/v1/deployments" \
+            -H "Authorization: Bearer ${{ secrets.CONTAINER_STUDIO_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "project": "seiketsu-ai",
+              "environment": "${{ env.ENVIRONMENT }}",
+              "version": "${{ github.sha }}",
+              "components": {
+                "frontend": "${{ needs.deploy-frontend.result }}",
+                "backend": "${{ needs.deploy-backend.result }}"
+              },
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }'
+
+  monitoring-setup:
+    name: Setup Monitoring
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always() && (needs.deploy-frontend.result == 'success' || needs.deploy-backend.result == 'success')
+    
+    steps:
+      - name: Configure 21dev.ai Monitoring
+        run: |
+          echo "Configuring 21dev.ai monitoring for deployment..."
+          curl -X POST "https://api.21dev.ai/v1/applications" \
+            -H "Authorization: Bearer ${{ secrets.MONITORING_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "application": "seiketsu-ai",
+              "environment": "${{ env.ENVIRONMENT }}",
+              "version": "${{ github.sha }}",
+              "deployment_time": "${{ github.event.head_commit.timestamp }}",
+              "monitoring_config": {
+                "performance_sla": {
+                  "voice_response_time_ms": 2000,
+                  "api_response_time_ms": 500
+                },
+                "multi_tenant": {
+                  "max_tenants": 40,
+                  "isolation_level": "hybrid"
+                }
+              }
+            }'
+
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, container-studio-sync, monitoring-setup]
+    if: always() && (needs.deploy-frontend.result == 'success' || needs.deploy-backend.result == 'success')
+    
+    steps:
+      - name: Notify deployment success
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#deployments'
+          message: |
+            🚀 Seiketsu AI deployment completed successfully!
+            
+            **Environment:** ${{ env.ENVIRONMENT }}
+            **Commit:** ${{ github.sha }}
+            **Actor:** ${{ github.actor }}
+            **Frontend:** ${{ needs.deploy-frontend.result }}
+            **Backend:** ${{ needs.deploy-backend.result }}
+            
+            Container Studio and 21dev.ai monitoring configured.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  notify-failure:
+    name: Notify Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always() && (needs.deploy-frontend.result == 'failure' || needs.deploy-backend.result == 'failure')
+    
+    steps:
+      - name: Notify deployment failure
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#deployments'
+          message: |
+            ❌ Seiketsu AI deployment failed!
+            
+            **Environment:** ${{ env.ENVIRONMENT }}
+            **Commit:** ${{ github.sha }}
+            **Actor:** ${{ github.actor }}
+            **Frontend:** ${{ needs.deploy-frontend.result }}
+            **Backend:** ${{ needs.deploy-backend.result }}
+            
+            Please check the GitHub Actions logs for details.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

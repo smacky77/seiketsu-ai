@@ -21,6 +21,8 @@ from app.models.voice_agent import VoiceAgent
 from app.models.conversation import Conversation, ConversationStatus
 from app.services.voice_service import VoiceService
 from app.services.conversation_service import ConversationService
+from app.services.elevenlabs_service import elevenlabs_service, Language, AudioFormat
+from app.api.v1.voice_streaming import router as streaming_router
 
 logger = logging.getLogger("seiketsu.voice")
 router = APIRouter()
@@ -67,6 +69,9 @@ class TextToSpeechRequest(BaseModel):
     text: str = Field(..., max_length=2000)
     voice_agent_id: str
     format: str = Field(default="mp3", regex="^(mp3|wav|ogg)$")
+    language: str = Field(default="en", regex="^(en|es|zh)$")
+    optimize_for_speed: bool = True
+    enable_caching: bool = True
 
 class SpeechToTextResponse(BaseModel):
     transcript: str
@@ -84,14 +89,14 @@ class VoiceProcessingResponse(BaseModel):
     conversation_ended: bool = False
     error: Optional[str] = None
 
-@router.websocket("/stream/{conversation_id}")
+@router.websocket("/ws/{session_id}")
 async def voice_stream_websocket(
     websocket: WebSocket,
-    conversation_id: str,
+    session_id: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """WebSocket endpoint for real-time voice streaming"""
-    await manager.connect(websocket, conversation_id)
+    """WebSocket endpoint for real-time voice streaming with sub-2s response time"""
+    await manager.connect(websocket, session_id)
     
     try:
         # Get conversation and validate access
@@ -308,8 +313,19 @@ async def synthesize_speech(
         if not voice_agent or voice_agent.organization_id != current_org.id:
             raise HTTPException(status_code=404, detail="Voice agent not found")
         
-        # Generate speech
-        audio_data = await voice_service._text_to_speech(request.text, voice_agent)
+        # Generate speech using enhanced ElevenLabs service
+        lang_map = {"en": Language.ENGLISH, "es": Language.SPANISH, "zh": Language.MANDARIN}
+        format_map = {"mp3": AudioFormat.MP3, "wav": AudioFormat.WAV, "ogg": AudioFormat.OGG}
+        
+        synthesis_result = await elevenlabs_service.synthesize_speech(
+            text=request.text,
+            voice_agent=voice_agent,
+            format=format_map.get(request.format, AudioFormat.MP3),
+            language=lang_map.get(getattr(request, 'language', 'en'), Language.ENGLISH),
+            optimize_for_speed=True
+        )
+        
+        audio_data = synthesis_result.audio_data
         
         # Determine content type
         content_type_map = {
@@ -324,8 +340,11 @@ async def synthesize_speech(
             media_type=content_type,
             headers={
                 "Content-Disposition": f"attachment; filename=speech.{request.format}",
-                "X-Audio-Duration": str(len(audio_data) / 16000),  # Approximate duration
-                "X-Voice-Agent-ID": voice_agent.id
+                "X-Audio-Duration": str(synthesis_result.duration_ms / 1000),
+                "X-Voice-Agent-ID": voice_agent.id,
+                "X-Processing-Time-MS": str(synthesis_result.processing_time_ms),
+                "X-Cached": str(synthesis_result.cached),
+                "X-Quality-Score": str(synthesis_result.quality_score)
             }
         )
         
@@ -380,9 +399,14 @@ async def get_voice_performance(
         
         performance_stats = voice_service.performance_stats
         
+        # Get enhanced health status including ElevenLabs service
+        enhanced_health = await voice_service.get_voice_service_health()
+        
         return {
             "performance": performance_stats,
-            "service_status": "operational" if performance_stats["average_ms"] < 200 else "degraded",
+            "service_status": enhanced_health["overall_status"],
+            "elevenlabs_status": enhanced_health["elevenlabs_service"]["status"],
+            "cache_hit_rate": enhanced_health["elevenlabs_service"].get("cache_hit_rate_percent", 0),
             "organization_id": current_org.id,
             "timestamp": datetime.utcnow().isoformat()
         }
@@ -422,6 +446,9 @@ async def list_voice_agents(
             }
             for agent in agents
         ]
+
+# Include streaming endpoints
+router.include_router(streaming_router, prefix="/streaming", tags=["voice-streaming"])
         
     except Exception as e:
         logger.error(f"Failed to list voice agents: {e}")

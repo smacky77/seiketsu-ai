@@ -70,10 +70,10 @@ export default function HeroSection() {
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
               
-              <button className="btn btn-secondary text-lg px-8 py-4">
-                <Play className="w-5 h-5 mr-2" />
-                Watch How It Works
-              </button>
+              <a href="/roi-calculator" className="btn btn-secondary text-lg px-8 py-4 bg-gradient-to-r from-green-600/10 to-blue-600/10 border-green-500/20 hover:from-green-600/20 hover:to-blue-600/20">
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Calculate Your ROI
+              </a>
             </div>
 
             {/* Risk Reversal */}

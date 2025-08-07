@@ -1,0 +1,286 @@
+# Seiketsu AI - Local Development Docker Compose
+# Container Studio compatible development environment
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: seiketsu-postgres
+    environment:
+      POSTGRES_DB: seiketsu_dev
+      POSTGRES_USER: seiketsu
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seiketsu -d seiketsu_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=database"
+      - "container-studio.tier=data"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: seiketsu-redis
+    command: redis-server --appendonly yes --requirepass dev_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=cache"
+      - "container-studio.tier=data"
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: development
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse HEAD)}
+    container_name: seiketsu-api
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://seiketsu:dev_password@postgres:5432/seiketsu_dev
+      - REDIS_URL=redis://:dev_password@redis:6379/0
+      - LOG_LEVEL=debug
+      - WORKERS=1
+      - RUN_MIGRATIONS=true
+      # API Keys (set in .env file)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api:/app:cached
+      - api_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=api"
+      - "container-studio.tier=backend"
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.localhost`)"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
+
+  # Next.js Frontend
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: development
+    container_name: seiketsu-web
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_ENVIRONMENT=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app:cached
+      - web_modules:/app/node_modules
+      - web_next:/app/.next
+    depends_on:
+      - api
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=web"
+      - "container-studio.tier=frontend"
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`localhost`)"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
+
+  # Reverse Proxy (Traefik)
+  traefik:
+    image: traefik:v3.0
+    container_name: seiketsu-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--accesslog=true"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=proxy"
+      - "container-studio.tier=infrastructure"
+
+  # Monitoring (Prometheus)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: seiketsu-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=monitoring"
+      - "container-studio.tier=infrastructure"
+
+  # Metrics Visualization (Grafana)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: seiketsu-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=grafana"
+      - "container-studio.tier=infrastructure"
+
+  # Log Aggregation (ELK Stack - Elasticsearch)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: seiketsu-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=search"
+      - "container-studio.tier=infrastructure"
+
+  # Log Processing (Logstash)
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: seiketsu-logstash
+    volumes:
+      - ./infrastructure/monitoring/logstash/pipeline:/usr/share/logstash/pipeline
+    ports:
+      - "5044:5044"
+    depends_on:
+      - elasticsearch
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=logstash"
+      - "container-studio.tier=infrastructure"
+
+  # Log Visualization (Kibana)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: seiketsu-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=kibana"
+      - "container-studio.tier=infrastructure"
+
+  # Container Studio Agent (Mock)
+  container-studio-agent:
+    image: alpine:latest
+    container_name: seiketsu-cs-agent
+    command: |
+      sh -c '
+        echo "Container Studio Agent - Development Mode"
+        echo "Monitoring services: api, web, postgres, redis"
+        while true; do
+          echo "[$(date)] Health check completed - All services healthy"
+          sleep 60
+        done
+      '
+    depends_on:
+      - api
+      - web
+      - postgres
+      - redis
+    networks:
+      - seiketsu-network
+    labels:
+      - "container-studio.service=agent"
+      - "container-studio.tier=monitoring"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  api_logs:
+    driver: local
+  web_modules:
+    driver: local
+  web_next:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+networks:
+  seiketsu-network:
+    driver: bridge
+    labels:
+      - "container-studio.network=development"

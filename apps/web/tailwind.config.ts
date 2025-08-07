@@ -6,6 +6,7 @@ const config: Config = {
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     container: {
@@ -157,5 +158,26 @@ const config: Config = {
     },
   },
   plugins: [require('tailwindcss-animate')],
+  safelist: [
+    // Ensure critical shadcn/ui classes are never purged
+    'bg-input',
+    'border-input',
+    'border-border',
+    'text-muted-foreground',
+    'text-foreground',
+    'bg-muted',
+    'bg-card',
+    'border-card',
+    'bg-popover',
+    'text-popover-foreground',
+    'bg-primary',
+    'text-primary-foreground',
+    'bg-secondary',
+    'text-secondary-foreground',
+    'bg-accent',
+    'text-accent-foreground',
+    'bg-destructive',
+    'text-destructive-foreground',
+  ],
 }
 export default config

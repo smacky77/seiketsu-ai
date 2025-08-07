@@ -3,6 +3,8 @@
  * Dynamic imports and code splitting for optimal loading
  */
 
+import * as React from 'react'
+
 interface BundleConfig {
   enableDynamicImports: boolean
   preloadCritical: boolean
@@ -140,26 +142,15 @@ class BundleOptimizer {
   createLazyComponent<T = any>(
     moduleName: string, 
     componentName: string = 'default'
-  ): React.ComponentType<T> {
-    const LazyComponent = React.lazy(async () => {
-      const module = await this.import(moduleName)
-      return {
-        default: module[componentName] || module.default || module
+  ): any {
+    // Return a function that creates the lazy component
+    return () => {
+      const loadModule = async () => {
+        const module = await this.import(moduleName)
+        return module[componentName] || module.default || module
       }
-    })
-
-    // Return component with error boundary
-    return (props: T) => (
-      <React.Suspense 
-        fallback={
-          <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        }
-      >
-        <LazyComponent {...props} />
-      </React.Suspense>
-    )
+      return loadModule()
+    }
   }
 
   /**

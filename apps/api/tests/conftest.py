@@ -1,17 +1,38 @@
 """
-Pytest configuration and shared fixtures for Seiketsu AI API tests
+Enhanced pytest configuration and shared fixtures for Seiketsu AI API tests.
+Includes comprehensive test setup, fixtures, and utilities.
 """
 import pytest
 import asyncio
-from typing import Generator, AsyncGenerator
-from sqlalchemy import create_engine
+import asyncpg
+import redis.asyncio as redis
+from typing import Generator, AsyncGenerator, Dict, Any
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from alembic import command
 from alembic.config import Config
 import os
+import sys
 from datetime import datetime
 import uuid
+import logging
+from unittest.mock import Mock, AsyncMock, patch
+from fastapi.testclient import TestClient
+import tempfile
+import shutil
+
+# Add app directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from main import app
+from app.core.config import settings
+from app.core.database import get_db, init_db
+from app.core.auth import create_access_token
+
+# Configure logging for tests
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Test database URL
 TEST_DATABASE_URL = os.getenv(
@@ -391,6 +412,229 @@ def setup_test_env(monkeypatch):
     monkeypatch.setenv("ELEVEN_LABS_API_KEY", "test_eleven_labs_key")
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/1")
     monkeypatch.setenv("CORS_ORIGINS", '["http://localhost:3000"]')
+
+
+# Additional configuration and utilities
+TEST_REDIS_URL = os.getenv("TEST_REDIS_URL", "redis://localhost:6379/1")
+
+
+# Pytest configuration
+def pytest_configure(config):
+    """Configure pytest settings and markers"""
+    # Register custom markers
+    config.addinivalue_line("markers", "unit: Unit tests (fast, isolated)")
+    config.addinivalue_line("markers", "integration: Integration tests (slower, with external services)")
+    config.addinivalue_line("markers", "performance: Performance and load tests")
+    config.addinivalue_line("markers", "security: Security and compliance tests")
+    config.addinivalue_line("markers", "ai: AI service tests")
+    config.addinivalue_line("markers", "voice: Voice processing tests")
+    config.addinivalue_line("markers", "database: Database-related tests")
+    config.addinivalue_line("markers", "api: API endpoint tests")
+    config.addinivalue_line("markers", "websocket: WebSocket connection tests")
+    config.addinivalue_line("markers", "slow: Slow running tests")
+    config.addinivalue_line("markers", "external: Tests requiring external services")
+    config.addinivalue_line("markers", "mock: Tests using mocked services")
+
+
+@pytest.fixture
+def client():
+    """Create FastAPI test client"""
+    return TestClient(app)
+
+
+@pytest.fixture
+def temp_directory():
+    """Create temporary directory for test files"""
+    temp_dir = tempfile.mkdtemp()
+    yield temp_dir
+    shutil.rmtree(temp_dir)
+
+
+@pytest.fixture
+async def redis_client():
+    """Create Redis client for tests"""
+    client = redis.from_url(TEST_REDIS_URL)
+    await client.flushdb()  # Clear test database
+    yield client
+    await client.flushdb()  # Cleanup
+    await client.close()
+
+
+# Authentication fixtures
+@pytest.fixture
+def access_token(test_user):
+    """Create access token for test user"""
+    return create_access_token(data={"sub": test_user.email, "user_id": test_user.id})
+
+
+@pytest.fixture
+def admin_token(test_admin_user):
+    """Create access token for admin user"""
+    return create_access_token(data={"sub": test_admin_user.email, "user_id": test_admin_user.id})
+
+
+@pytest.fixture
+def authorized_headers(access_token):
+    """Create headers with auth token"""
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest.fixture
+def admin_headers(admin_token):
+    """Create headers with admin auth token"""
+    return {"Authorization": f"Bearer {admin_token}"}
+
+
+# Test data fixtures
+@pytest.fixture
+def sample_lead_data():
+    """Sample lead data for testing"""
+    return {
+        "name": "John Smith",
+        "email": "john.smith@example.com",
+        "phone": "+1234567890",
+        "source": "website",
+        "property_preferences": {
+            "type": "single_family",
+            "bedrooms": 3,
+            "bathrooms": 2,
+            "min_price": 300000,
+            "max_price": 500000,
+            "location": "downtown",
+            "features": ["garage", "pool", "updated_kitchen"]
+        },
+        "timeline": "3_months",
+        "notes": "Interested in properties with good schools nearby"
+    }
+
+
+@pytest.fixture
+def sample_conversation_data():
+    """Sample conversation data for testing"""
+    return {
+        "type": "outbound_call",
+        "duration_seconds": 420,
+        "transcript": "Agent: Hello, thank you for your interest in our properties.\nLead: Hi, I'm looking for a family home in a good neighborhood.",
+        "sentiment_score": 0.8,
+        "lead_score": 75,
+        "status": "qualified",
+        "ai_insights": {
+            "intent": "property_search",
+            "emotions": ["interested", "engaged"],
+            "urgency": "medium",
+            "buying_signals": ["budget_mentioned", "timeline_specified"]
+        }
+    }
+
+
+@pytest.fixture
+def sample_property_data():
+    """Sample property data for testing"""
+    return {
+        "mls_id": "MLS789012",
+        "address": "456 Oak Avenue, Testville",
+        "city": "Testville",
+        "state": "CA",
+        "zip_code": "90210",
+        "price": 575000,
+        "bedrooms": 4,
+        "bathrooms": 2.5,
+        "square_feet": 2800,
+        "lot_size": 0.25,
+        "property_type": "single_family",
+        "listing_status": "active",
+        "year_built": 2010,
+        "features": ["garage", "fireplace", "hardwood_floors", "updated_kitchen", "master_suite"],
+        "description": "Beautiful family home in desirable neighborhood",
+        "images": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
+    }
+
+
+# Utility fixtures
+@pytest.fixture
+def assert_timing():
+    """Utility for asserting operation timing"""
+    import time
+    
+    class TimingAssertion:
+        def __init__(self):
+            self.start_time = None
+            
+        def start(self):
+            self.start_time = time.perf_counter()
+            
+        def assert_under(self, max_seconds, message="Operation took too long"):
+            if self.start_time is None:
+                raise ValueError("Must call start() first")
+            
+            elapsed = time.perf_counter() - self.start_time
+            assert elapsed < max_seconds, f"{message}: {elapsed:.3f}s > {max_seconds}s"
+            
+        def get_elapsed(self):
+            if self.start_time is None:
+                return 0
+            return time.perf_counter() - self.start_time
+    
+    return TimingAssertion()
+
+
+@pytest.fixture
+def performance_monitor():
+    """Monitor performance metrics during tests"""
+    import psutil
+    import time
+    
+    class PerformanceMonitor:
+        def __init__(self):
+            self.process = psutil.Process()
+            self.start_time = None
+            self.start_memory = None
+            self.start_cpu = None
+            
+        def start(self):
+            self.start_time = time.perf_counter()
+            self.start_memory = self.process.memory_info().rss
+            self.start_cpu = self.process.cpu_percent()
+            
+        def get_metrics(self):
+            if self.start_time is None:
+                return {}
+                
+            return {
+                "elapsed_time": time.perf_counter() - self.start_time,
+                "memory_delta": self.process.memory_info().rss - self.start_memory,
+                "cpu_percent": self.process.cpu_percent(),
+                "memory_mb": self.process.memory_info().rss / 1024 / 1024
+            }
+    
+    return PerformanceMonitor()
+
+
+# Custom pytest hooks
+def pytest_addoption(parser):
+    """Add custom command line options"""
+    parser.addoption("--runslow", action="store_true", default=False, help="Run slow tests")
+    parser.addoption("--runexternal", action="store_true", default=False, help="Run tests requiring external services")
+
+
+def pytest_runtest_setup(item):
+    """Set up before each test"""
+    # Skip slow tests unless explicitly requested
+    if "slow" in [mark.name for mark in item.iter_markers()]:
+        if not item.config.getoption("--runslow", default=False):
+            pytest.skip("Skipping slow test (use --runslow to run)")
+
+
+def pytest_sessionstart(session):
+    """Validate test configuration at session start"""
+    logger.info("Starting Seiketsu AI test session")
+    logger.info(f"Test database: {TEST_DATABASE_URL}")
+    logger.info(f"Test Redis: {TEST_REDIS_URL}")
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Clean up at session end"""
+    logger.info(f"Test session finished with exit status: {exitstatus}")
 
 
 # Cleanup fixtures

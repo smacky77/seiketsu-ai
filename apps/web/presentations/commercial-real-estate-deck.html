@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seiketsu AI - Commercial Real Estate Solution</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --seiketsu-primary: #000000;
+            --seiketsu-secondary: #0066cc;
+            --seiketsu-accent: #00cc66;
+            --seiketsu-warning: #ff6b35;
+            --seiketsu-background: #ffffff;
+            --seiketsu-surface: #f8fafc;
+            --seiketsu-text-primary: #1a202c;
+            --seiketsu-text-secondary: #4a5568;
+            --seiketsu-text-muted: #718096;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--seiketsu-text-primary);
+            background: var(--seiketsu-background);
+        }
+
+        .presentation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .slide {
+            min-height: 100vh;
+            padding: 60px 40px;
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide-number {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: var(--seiketsu-text-muted);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--seiketsu-primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--seiketsu-primary);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--seiketsu-secondary);
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: var(--seiketsu-text-secondary);
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin: 40px 0;
+        }
+
+        .feature-card {
+            background: var(--seiketsu-surface);
+            padding: 30px;
+            border-radius: 12px;
+            border-left: 4px solid var(--seiketsu-accent);
+        }
+
+        .stat {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--seiketsu-accent);
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: var(--seiketsu-text-secondary);
+            margin-top: 10px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 30px 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            color: var(--seiketsu-text-secondary);
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: var(--seiketsu-accent);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .pain-point {
+            background: linear-gradient(135deg, #fff5f5, #fed7d7);
+            border-left: 4px solid var(--seiketsu-warning);
+        }
+
+        .solution-highlight {
+            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+            border-left: 4px solid var(--seiketsu-accent);
+        }
+
+        .roi-calculator {
+            background: linear-gradient(135deg, var(--seiketsu-surface), white);
+            padding: 40px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--seiketsu-primary);
+            margin-bottom: 10px;
+        }
+
+        .voice-wave {
+            width: 20px;
+            height: 20px;
+            background: var(--seiketsu-accent);
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .cre-scenario {
+            background: #000;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+            color: #00ff41;
+            font-family: 'Monaco', monospace;
+            min-height: 150px;
+        }
+
+        .cta-button {
+            background: var(--seiketsu-accent);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background: #00b359;
+            transform: translateY(-2px);
+        }
+
+        .deal-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .deal-step {
+            background: var(--seiketsu-surface);
+            border: 2px solid var(--seiketsu-accent);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .deal-arrow {
+            font-size: 2rem;
+            color: var(--seiketsu-accent);
+        }
+
+        .metrics-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .commercial-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+
+        .commercial-table th,
+        .commercial-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .commercial-table th {
+            background: var(--seiketsu-surface);
+            font-weight: 600;
+            color: var(--seiketsu-primary);
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 40px 20px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            h2 {
+                font-size: 2rem;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .deal-flow {
+                flex-direction: column;
+            }
+            
+            .deal-arrow {
+                transform: rotate(90deg);
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        
+        <!-- Slide 1: Title Slide -->
+        <div class="slide">
+            <div class="slide-number">1/17</div>
+            <div class="slide-header">
+                <div class="logo">
+                    <div class="voice-wave"></div>
+                    Seiketsu AI
+                </div>
+                <h1>Accelerate Commercial Real Estate Deals</h1>
+                <p class="subtitle">Transform tenant prospecting, streamline lease negotiations, and maximize occupancy rates with AI-powered voice intelligence designed for commercial real estate professionals.</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Commercial Real Estate Challenges -->
+        <div class="slide">
+            <div class="slide-number">2/17</div>
+            <h2>The Commercial Real Estate Challenge</h2>
+            <div class="content-grid">
+                <div class="feature-card pain-point">
+                    <h3>💼 Long Sales Cycles</h3>
+                    <p>Commercial deals take 6-18 months from initial contact to lease signing. Prospects go cold during extended negotiations and due diligence periods.</p>
+                </div>
+                <div class="feature-card pain-point">
+                    <h3>🏢 High Vacancy Costs</h3>
+                    <p>Empty commercial space costs $25-50 per square foot annually. Every month of vacancy in a 10,000 SF space costs $20,000+ in lost revenue.</p>
+                </div>
+                <div class="feature-card pain-point">
+                    <h3>📞 Inconsistent Follow-Up</h3>
+                    <p>Brokers juggle multiple deals and prospects fall through the cracks. No systematic approach to nurturing leads through long decision cycles.</p>
+                </div>
+                <div class="feature-card pain-point">
+                    <h3>🎯 Qualification Challenges</h3>
+                    <p>Difficulty identifying serious prospects from tire kickers. Wasted time on unqualified leads who don't have budget, timeline, or authority.</p>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">$847B</div>
+                <div class="stat-label">US commercial real estate transaction volume annually</div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Market Opportunity -->
+        <div class="slide">
+            <div class="slide-number">3/17</div>
+            <h2>The Commercial Real Estate Market</h2>
+            <div class="content-grid">
+                <div class="stat">
+                    <div class="stat-number">$847B</div>
+                    <div class="stat-label">annual transaction volume</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">5.6B</div>
+                    <div class="stat-label">square feet of commercial space</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">150K</div>
+                    <div class="stat-label">commercial real estate professionals</div>
+                </div>
+            </div>
+            <div class="roi-calculator">
+                <h3>Industry Transformation Drivers</h3>
+                <p>• Increasing competition for quality tenants</p>
+                <p>• Rising importance of tenant experience and retention</p>
+                <p>• Need for faster deal qualification and closing</p>
+                <p>• Demand for data-driven insights and reporting</p>
+                <p>• Pressure to reduce time-to-lease and vacancy periods</p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Seiketsu AI for Commercial Real Estate -->
+        <div class="slide">
+            <div class="slide-number">4/17</div>
+            <h2>AI-Powered Commercial Deal Intelligence</h2>
+            <div class="cre-scenario">
+                <p>> Prospect calls: "I'm looking for 15,000 square feet of office space downtown"</p>
+                <p>> Seiketsu AI: "Excellent! I represent several premium downtown properties. What's your timeline for occupancy, and do you have any specific requirements for parking or building amenities?"</p>
+                <p>> Prospect: "We need to be in by Q3, and parking for 60 employees is essential"</p>
+                <p>> Seiketsu AI: "Perfect. I have 3 spaces that meet those criteria. What's your budget range per square foot, and would you prefer a full floor or multi-floor layout?"</p>
+                <p>> RESULT: Qualified prospect, budget identified, tour scheduled - all in first call</p>
+            </div>
+            <div class="deal-flow">
+                <div class="deal-step">
+                    <h3>Prospect Inquiry</h3>
+                    <p>Any channel, any time</p>
+                </div>
+                <div class="deal-arrow">→</div>
+                <div class="deal-step">
+                    <h3>AI Qualification</h3>
+                    <p>Budget, timeline, requirements</p>
+                </div>
+                <div class="deal-arrow">→</div>
+                <div class="deal-step">
+                    <h3>Intelligent Matching</h3>
+                    <p>Available properties, comps</p>
+                </div>
+                <div class="deal-arrow">→</div>
+                <div class="deal-step">
+                    <h3>Broker Handoff</h3>
+                    <p>Qualified lead, next actions</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Commercial-Specific Features -->
+        <div class="slide">
+            <div class="slide-number">5/17</div>
+            <h2>Built for Commercial Real Estate</h2>
+            <div class="content-grid">
+                <div class="feature-card solution-highlight">
+                    <h3>🏢 Property Intelligence Engine</h3>
+                    <p>AI understands building specs, zoning, parking ratios, and market comps to have sophisticated discussions with prospects about their space needs.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>💰 Financial Qualification</h3>
+                    <p>Intelligent questioning around budget, lease terms, expansion plans, and financial capacity to identify serious prospects early.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📊 Market Data Integration</h3>
+                    <p>Access to real-time market data, comparable properties, and occupancy rates to provide informed responses to prospect questions.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>🤝 Relationship Nurturing</h3>
+                    <p>Long-term follow-up campaigns that adapt to prospect business cycles, lease expiration dates, and expansion timelines.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Deal Acceleration -->
+        <div class="slide">
+            <div class="slide-number">6/17</div>
+            <h2>Accelerate Deal Velocity</h2>
+            <div class="content-grid">
+                <div class="stat">
+                    <div class="stat-number">45%</div>
+                    <div class="stat-label">reduction in time-to-lease</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">73%</div>
+                    <div class="stat-label">more qualified prospects</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">$2.3M</div>
+                    <div class="stat-label">additional annual revenue per broker</div>
+                </div>
+            </div>
+            <table class="commercial-table">
+                <thead>
+                    <tr>
+                        <th>Deal Stage</th>
+                        <th>Traditional Process</th>
+                        <th>With Seiketsu AI</th>
+                        <th>Time Saved</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Initial Contact</td>
+                        <td>2-3 days to respond</td>
+                        <td>30 seconds</td>
+                        <td>99% faster</td>
+                    </tr>
+                    <tr>
+                        <td>Qualification</td>
+                        <td>3-5 phone calls</td>
+                        <td>1 AI conversation</td>
+                        <td>70% fewer touches</td>
+                    </tr>
+                    <tr>
+                        <td>Tour Scheduling</td>
+                        <td>4-6 back-and-forth emails</td>
+                        <td>Instant scheduling</td>
+                        <td>85% time savings</td>
+                    </tr>
+                    <tr>
+                        <td>Follow-Up</td>
+                        <td>Manual, inconsistent</td>
+                        <td>Automated, personalized</td>
+                        <td>100% consistency</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Slide 7: Tenant Prospecting -->
+        <div class="slide">
+            <div class="slide-number">7/17</div>
+            <h2>Intelligent Tenant Prospecting</h2>
+            <div class="cre-scenario">
+                <p>> Seiketsu AI (proactive outreach): "Hi, this is Alex from Metro Commercial. I noticed your company has been growing rapidly. Are you considering expanding your office space in the next 12 months?"</p>
+                <p>> Prospect: "Actually, yes. We're outgrowing our current 8,000 square feet"</p>
+                <p>> Seiketsu AI: "That's exciting! What size space are you targeting, and are you looking to stay in the same area or open to exploring other locations with better value?"</p>
+                <p>> RESULT: Identified expansion opportunity before competitors, qualified interest</p>
+            </div>
+            <div class="content-grid">
+                <div class="feature-card solution-highlight">
+                    <h3>🎯 Expansion Tracking</h3>
+                    <p>Monitor tenant lease expirations, company growth signals, and expansion announcements to proactively reach growing businesses.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📈 Market Intelligence</h3>
+                    <p>Track new business licenses, hiring announcements, and funding rounds to identify prospects before they start actively searching.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: ROI Analysis for Commercial Brokers -->
+        <div class="slide">
+            <div class="slide-number">8/17</div>
+            <h2>ROI: Transform Your Commercial Practice</h2>
+            <div class="roi-calculator">
+                <h3>Commercial Broker (5 deals annually) - Results After 12 Months</h3>
+                <div class="metrics-dashboard">
+                    <div class="metric-card">
+                        <div class="stat-number">$2.3M</div>
+                        <div class="stat-label">Additional Revenue</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="stat-number">8</div>
+                        <div class="stat-label">Total Deals Closed</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="stat-number">157</div>
+                        <div class="stat-label">Days Saved per Deal</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="stat-number">340%</div>
+                        <div class="stat-label">More Qualified Prospects</div>
+                    </div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <h3>Cost-Benefit Analysis</h3>
+                <p><strong>Traditional Approach:</strong> $8,000/month (marketing + admin support)</p>
+                <p><strong>Seiketsu AI:</strong> $3,500/month + higher conversion rates</p>
+                <p><strong>Net Additional Revenue:</strong> $191,667/month</p>
+                <p><strong>ROI:</strong> 5,476% annually</p>
+            </div>
+        </div>
+
+        <!-- Slide 9: Case Study - Metropolitan Properties -->
+        <div class="slide">
+            <div class="slide-number">9/17</div>
+            <h2>Case Study: Metropolitan Properties</h2>
+            <div class="roi-calculator">
+                <h3>Challenge</h3>
+                <p>Commercial brokerage with 2.3M SF under management struggling with long vacancy periods and inconsistent tenant prospecting across 15 brokers.</p>
+                
+                <h3 style="margin-top: 30px;">Solution</h3>
+                <p>Deployed Seiketsu AI for prospect qualification, tenant retention calls, and proactive expansion outreach integrated with LoopNet and their CRM.</p>
+                
+                <h3 style="margin-top: 30px;">Results After 10 Months</h3>
+                <div class="content-grid">
+                    <div class="stat">
+                        <div class="stat-number">$8.7M</div>
+                        <div class="stat-label">additional lease revenue</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">89 days</div>
+                        <div class="stat-label">average time to lease (vs 156)</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">94%</div>
+                        <div class="stat-label">tenant retention rate</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">267%</div>
+                        <div class="stat-label">increase in qualified prospects</div>
+                    </div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <p><em>"Seiketsu AI transformed our prospecting and tenant relations. We're identifying expansion opportunities 6 months before tenants would have contacted us, and our vacancy rates dropped from 12% to 4%."</em></p>
+                <p><strong>- Robert Chen, Managing Partner, Metropolitan Properties</strong></p>
+            </div>
+        </div>
+
+        <!-- Slide 10: Integration with CRE Tools -->
+        <div class="slide">
+            <div class="slide-number">10/17</div>
+            <h2>Seamless Integration with CRE Platforms</h2>
+            <div class="content-grid">
+                <div class="feature-card">
+                    <h3>CRM & Database Systems</h3>
+                    <ul class="feature-list">
+                        <li>Salesforce CRE</li>
+                        <li>Apto</li>
+                        <li>ClientLook</li>
+                        <li>Buildout</li>
+                        <li>PropertyRadar</li>
+                        <li>VTS (View The Space)</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>Market Data Sources</h3>
+                    <ul class="feature-list">
+                        <li>LoopNet</li>
+                        <li>CoStar</li>
+                        <li>Crexi</li>
+                        <li>REIS</li>
+                        <li>Real Capital Analytics</li>
+                        <li>CompStak</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>Communication & Marketing</h3>
+                    <ul class="feature-list">
+                        <li>Email marketing platforms</li>
+                        <li>Property websites</li>
+                        <li>Social media channels</li>
+                        <li>Digital signage systems</li>
+                        <li>Virtual tour platforms</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Tenant Retention -->
+        <div class="slide">
+            <div class="slide-number">11/17</div>
+            <h2>Maximize Tenant Retention & Expansion</h2>
+            <div class="cre-scenario">
+                <p>> Seiketsu AI (18 months before lease expiration): "Hi Sarah, I hope your business is thriving in the Westside Tower. I wanted to check in about your space needs as we approach your lease renewal period."</p>
+                <p>> Tenant: "Thanks for calling. We've actually been discussing expansion plans"</p>
+                <p>> Seiketsu AI: "That's wonderful news! We have several expansion options in the building, including a contiguous 5,000 SF suite that just became available. Would you like me to schedule a tour?"</p>
+                <p>> RESULT: Retention secured, expansion opportunity identified, competitor prevented</p>
+            </div>
+            <div class="content-grid">
+                <div class="feature-card solution-highlight">
+                    <h3>📅 Proactive Renewal Campaigns</h3>
+                    <p>Automated outreach beginning 18 months before lease expiration with personalized renewal strategies based on tenant history.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📊 Tenant Satisfaction Monitoring</h3>
+                    <p>Regular check-ins to identify issues early and gauge satisfaction levels, preventing competitive threats.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Market Intelligence & Reporting -->
+        <div class="slide">
+            <div class="slide-number">12/17</div>
+            <h2>Advanced Market Intelligence</h2>
+            <div class="content-grid">
+                <div class="feature-card solution-highlight">
+                    <h3>📈 Deal Pipeline Analytics</h3>
+                    <p>Real-time visibility into prospect quality, deal velocity, and conversion rates across your entire portfolio and team.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>🎯 Market Positioning Insights</h3>
+                    <p>Competitive analysis, pricing optimization recommendations, and tenant demand patterns to maximize lease rates.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>🔮 Predictive Analytics</h3>
+                    <p>AI-powered forecasting for vacancy trends, market cycles, and optimal timing for lease negotiations.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📊 Custom Reporting</h3>
+                    <p>Automated reports for ownership groups, investors, and management teams with KPIs that matter to commercial stakeholders.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Implementation for CRE Firms -->
+        <div class="slide">
+            <div class="slide-number">13/17</div>
+            <h2>Tailored Implementation Process</h2>
+            <div class="deal-flow">
+                <div class="deal-step">
+                    <h3>Week 1-2</h3>
+                    <p>Portfolio Integration</p>
+                    <ul style="text-align: left; margin-top: 15px;">
+                        <li>Property data import</li>
+                        <li>CRM system connection</li>
+                        <li>Market data integration</li>
+                    </ul>
+                </div>
+                <div class="deal-arrow">→</div>
+                <div class="deal-step">
+                    <h3>Week 3-4</h3>
+                    <p>AI Customization</p>
+                    <ul style="text-align: left; margin-top: 15px;">
+                        <li>Commercial voice training</li>
+                        <li>Qualification frameworks</li>
+                        <li>Brand voice development</li>
+                    </ul>
+                </div>
+                <div class="deal-arrow">→</div>
+                <div class="deal-step">
+                    <h3>Week 5-6</h3>
+                    <p>Team Training</p>
+                    <ul style="text-align: left; margin-top: 15px;">
+                        <li>Broker onboarding</li>
+                        <li>Process optimization</li>
+                        <li>Performance monitoring</li>
+                    </ul>
+                </div>
+                <div class="deal-arrow">→</div>
+                <div class="deal-step">
+                    <h3>Week 7-8</h3>
+                    <p>Full Activation</p>
+                    <ul style="text-align: left; margin-top: 15px;">
+                        <li>Portfolio-wide deployment</li>
+                        <li>Success measurement</li>
+                        <li>Optimization tuning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Pricing for Commercial Real Estate -->
+        <div class="slide">
+            <div class="slide-number">14/17</div>
+            <h2>Investment Tiers for CRE Professionals</h2>
+            <div class="content-grid">
+                <div class="feature-card">
+                    <h3>Individual Broker</h3>
+                    <p><strong>$1,997/month</strong></p>
+                    <ul class="feature-list">
+                        <li>Personal portfolio up to 50 properties</li>
+                        <li>Basic CRM integration</li>
+                        <li>Prospect qualification & follow-up</li>
+                        <li>Standard market data access</li>
+                        <li>Email & phone support</li>
+                    </ul>
+                    <button class="cta-button">Perfect for solo brokers</button>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>Brokerage Team</h3>
+                    <p><strong>$4,997/month</strong> (Most Popular)</p>
+                    <ul class="feature-list">
+                        <li>Team portfolio up to 500 properties</li>
+                        <li>Advanced CRM & market data integration</li>
+                        <li>Multi-broker lead routing</li>
+                        <li>Custom reporting & analytics</li>
+                        <li>Priority support & training</li>
+                    </ul>
+                    <button class="cta-button">Ideal for growing teams</button>
+                </div>
+                <div class="feature-card">
+                    <h3>Enterprise Firm</h3>
+                    <p><strong>Custom Pricing</strong></p>
+                    <ul class="feature-list">
+                        <li>Unlimited properties & brokers</li>
+                        <li>Multi-market operations</li>
+                        <li>Custom integrations & workflows</li>
+                        <li>Dedicated success manager</li>
+                        <li>White-label options</li>
+                    </ul>
+                    <button class="cta-button">For large CRE firms</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Risk Mitigation & Guarantees -->
+        <div class="slide">
+            <div class="slide-number">15/17</div>
+            <h2>Risk-Free Implementation</h2>
+            <div class="content-grid">
+                <div class="feature-card solution-highlight">
+                    <h3>💰 Deal Velocity Guarantee</h3>
+                    <p>If Seiketsu AI doesn't reduce your average time-to-lease by 30% within 6 months, we'll refund your entire investment.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>🔧 Seamless Integration</h3>
+                    <p>Complete integration with your existing CRE platforms with zero disruption to current deals or client relationships.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📞 CRE Specialist Support</h3>
+                    <p>Dedicated commercial real estate specialists who understand the complexity of your deals and market dynamics.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📊 Performance Transparency</h3>
+                    <p>Complete visibility into every prospect interaction with detailed analytics on conversion rates and deal progression.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 16: Success Metrics & KPIs -->
+        <div class="slide">
+            <div class="slide-number">16/17</div>
+            <h2>Measure Success with Commercial KPIs</h2>
+            <div class="metrics-dashboard">
+                <div class="metric-card">
+                    <h3>Time to Lease</h3>
+                    <div class="stat-number">-45%</div>
+                    <div class="stat-label">average reduction</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Prospect Quality</h3>
+                    <div class="stat-number">+73%</div>
+                    <div class="stat-label">qualified prospects</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Deal Conversion</h3>
+                    <div class="stat-number">+186%</div>
+                    <div class="stat-label">improvement</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Revenue per Broker</h3>
+                    <div class="stat-number">+$2.3M</div>
+                    <div class="stat-label">annually</div>
+                </div>
+            </div>
+            <div class="roi-calculator">
+                <h3>Your Success Dashboard</h3>
+                <p>✅ Real-time deal pipeline visibility</p>
+                <p>✅ Prospect engagement and qualification metrics</p>
+                <p>✅ Time-to-lease tracking across all properties</p>
+                <p>✅ Tenant retention and expansion analytics</p>
+                <p>✅ Market positioning and competitive insights</p>
+                <p>✅ ROI and revenue attribution reporting</p>
+            </div>
+        </div>
+
+        <!-- Slide 17: Next Steps & Contact -->
+        <div class="slide">
+            <div class="slide-number">17/17</div>
+            <div class="slide-header">
+                <div class="logo">
+                    <div class="voice-wave"></div>
+                    Seiketsu AI
+                </div>
+                <h2>Ready to Accelerate Your CRE Success?</h2>
+                <div class="roi-calculator" style="margin-top: 40px;">
+                    <h3>Your Next Steps</h3>
+                    <div class="deal-flow">
+                        <div class="deal-step">
+                            <h3>This Week</h3>
+                            <p>Schedule personalized CRE demo</p>
+                            <p>Custom ROI analysis for your portfolio</p>
+                        </div>
+                        <div class="deal-arrow">→</div>
+                        <div class="deal-step">
+                            <h3>Next 30 Days</h3>
+                            <p>Complete integration & training</p>
+                            <p>Start accelerating deal velocity</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 40px;">
+                    <button class="cta-button" style="font-size: 1.3rem; padding: 20px 40px;">Book Your CRE Demo</button>
+                    <p style="margin-top: 20px; color: var(--seiketsu-text-muted);">
+                        Commercial Real Estate Specialists: (555) 123-COMM | cre@seiketsu.ai
+                    </p>
+                </div>
+                <p class="subtitle" style="margin-top: 30px;">
+                    Every day of vacancy costs money. Every missed prospect goes to a competitor.<br>
+                    Transform your commercial practice and maximize deal velocity with Seiketsu AI.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

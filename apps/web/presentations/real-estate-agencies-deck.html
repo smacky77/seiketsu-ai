@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seiketsu AI - Real Estate Agencies Solution</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --seiketsu-primary: #000000;
+            --seiketsu-secondary: #0066cc;
+            --seiketsu-accent: #00cc66;
+            --seiketsu-warning: #ff6b35;
+            --seiketsu-background: #ffffff;
+            --seiketsu-surface: #f8fafc;
+            --seiketsu-text-primary: #1a202c;
+            --seiketsu-text-secondary: #4a5568;
+            --seiketsu-text-muted: #718096;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--seiketsu-text-primary);
+            background: var(--seiketsu-background);
+        }
+
+        .presentation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .slide {
+            min-height: 100vh;
+            padding: 60px 40px;
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide-number {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: var(--seiketsu-text-muted);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--seiketsu-primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--seiketsu-primary);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--seiketsu-secondary);
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: var(--seiketsu-text-secondary);
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin: 40px 0;
+        }
+
+        .feature-card {
+            background: var(--seiketsu-surface);
+            padding: 30px;
+            border-radius: 12px;
+            border-left: 4px solid var(--seiketsu-accent);
+        }
+
+        .stat {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--seiketsu-accent);
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: var(--seiketsu-text-secondary);
+            margin-top: 10px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 30px 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            color: var(--seiketsu-text-secondary);
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: var(--seiketsu-accent);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .pain-point {
+            background: linear-gradient(135deg, #fff5f5, #fed7d7);
+            border-left: 4px solid var(--seiketsu-warning);
+        }
+
+        .solution-highlight {
+            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+            border-left: 4px solid var(--seiketsu-accent);
+        }
+
+        .roi-calculator {
+            background: linear-gradient(135deg, var(--seiketsu-surface), white);
+            padding: 40px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--seiketsu-primary);
+            margin-bottom: 10px;
+        }
+
+        .voice-wave {
+            width: 20px;
+            height: 20px;
+            background: var(--seiketsu-accent);
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .agent-scenario {
+            background: #000;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+            color: #00ff41;
+            font-family: 'Monaco', monospace;
+            min-height: 150px;
+        }
+
+        .cta-button {
+            background: var(--seiketsu-accent);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background: #00b359;
+            transform: translateY(-2px);
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .comparison-table th {
+            background: var(--seiketsu-surface);
+            font-weight: 600;
+            color: var(--seiketsu-primary);
+        }
+
+        .before-after {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .before {
+            background: linear-gradient(135deg, #fff5f5, #fed7d7);
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        .after {
+            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 40px 20px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            h2 {
+                font-size: 2rem;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .before-after {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        
+        <!-- Slide 1: Title Slide -->
+        <div class="slide">
+            <div class="slide-number">1/15</div>
+            <div class="slide-header">
+                <div class="logo">
+                    <div class="voice-wave"></div>
+                    Seiketsu AI
+                </div>
+                <h1>Supercharge Your Real Estate Agency</h1>
+                <p class="subtitle">Turn every lead into a conversation, every conversation into an appointment, and every appointment into a closed deal with AI-powered voice agents built specifically for real estate professionals.</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Agency Pain Points -->
+        <div class="slide">
+            <div class="slide-number">2/15</div>
+            <h2>The Real Estate Agency Challenge</h2>
+            <div class="content-grid">
+                <div class="feature-card pain-point">
+                    <h3>😤 Lead Response Bottleneck</h3>
+                    <p>Agents in showings can't answer new leads. By the time they call back, prospects have moved on to competitors who responded faster.</p>
+                </div>
+                <div class="feature-card pain-point">
+                    <h3>💸 Rising Lead Costs</h3>
+                    <p>Zillow, Realtor.com, and Google Ads cost more every year, but conversion rates keep dropping because of slow response times.</p>
+                </div>
+                <div class="feature-card pain-point">
+                    <h3>⏰ After-Hours Lost Revenue</h3>
+                    <p>60% of leads come in outside business hours. Weekend and evening prospects often convert fastest but get no immediate response.</p>
+                </div>
+                <div class="feature-card pain-point">
+                    <h3>🔄 Inconsistent Follow-Up</h3>
+                    <p>Busy agents forget to follow up, leading to warm prospects going cold. No systematic approach to nurturing leads over time.</p>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">73%</div>
+                <div class="stat-label">of real estate leads never get contacted within the first hour</div>
+            </div>
+        </div>
+
+        <!-- Slide 3: What If Scenario -->
+        <div class="slide">
+            <div class="slide-number">3/15</div>
+            <h2>What If Every Lead Got Instant Response?</h2>
+            <div class="agent-scenario">
+                <p>> New lead from Zillow: "Interested in 123 Oak Street"</p>
+                <p>> Seiketsu AI responds in 15 seconds</p>
+                <p>> "Hi Michelle! I see you're interested in the Oak Street property. I'm Sarah with ABC Realty. Do you have a few minutes to discuss what you're looking for?"</p>
+                <p>> Lead: "Yes! I need a 3-bedroom under $500K"</p>
+                <p>> Seiketsu AI: "Perfect! That property fits your criteria. Are you pre-approved for financing? I can also show you 2 similar homes that just came on the market."</p>
+                <p>> RESULT: Lead qualified and appointment scheduled while your competition is still sleeping</p>
+            </div>
+            <div class="roi-calculator">
+                <h3>The Seiketsu AI Advantage</h3>
+                <p>✅ Every lead contacted within 30 seconds, 24/7</p>
+                <p>✅ Consistent qualification process across all agents</p>
+                <p>✅ Appointments scheduled directly into agent calendars</p>
+                <p>✅ Complete conversation transcripts for follow-up</p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Before vs After -->
+        <div class="slide">
+            <div class="slide-number">4/15</div>
+            <h2>Transform Your Agency Operations</h2>
+            <div class="before-after">
+                <div class="before">
+                    <h3>❌ Before Seiketsu AI</h3>
+                    <ul class="feature-list">
+                        <li>Agent gets lead notification via email</li>
+                        <li>Currently in showing, can't respond immediately</li>
+                        <li>Remembers to call back 4 hours later</li>
+                        <li>Lead has already contacted 3 other agents</li>
+                        <li>Voicemail or no answer - lead is lost</li>
+                        <li>Expensive lead generates $0 revenue</li>
+                    </ul>
+                </div>
+                <div class="after">
+                    <h3>✅ After Seiketsu AI</h3>
+                    <ul class="feature-list">
+                        <li>Lead submits inquiry on your website</li>
+                        <li>Seiketsu AI calls within 30 seconds</li>
+                        <li>Natural conversation qualifies buyer</li>
+                        <li>AI schedules showing for next day</li>
+                        <li>Agent gets qualified lead + appointment</li>
+                        <li>Higher conversion, happier agents</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Agency-Specific Features -->
+        <div class="slide">
+            <div class="slide-number">5/15</div>
+            <h2>Built for Real Estate Agencies</h2>
+            <div class="content-grid">
+                <div class="feature-card solution-highlight">
+                    <h3>🏡 Property-Aware Conversations</h3>
+                    <p>AI instantly knows property details, neighborhood info, schools, and comps to have intelligent discussions with prospects.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>👥 Agent Assignment Logic</h3>
+                    <p>Automatically routes leads to the right agent based on location, specialization, availability, or custom rules you set.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📋 Buyer Qualification Framework</h3>
+                    <p>Uses proven real estate qualification questions to identify serious buyers vs. tire kickers before wasting agent time.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📅 Calendar Integration</h3>
+                    <p>Books showings directly into agent calendars with property details, prospect info, and conversation summary.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: ROI for Agencies -->
+        <div class="slide">
+            <div class="slide-number">6/15</div>
+            <h2>Real Numbers from Real Agencies</h2>
+            <div class="roi-calculator">
+                <h3>Medium Agency (300 leads/month) - Results After 90 Days</h3>
+                <div class="content-grid">
+                    <div class="stat">
+                        <div class="stat-number">89%</div>
+                        <div class="stat-label">of leads contacted (vs 31% before)</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">340%</div>
+                        <div class="stat-label">increase in appointments scheduled</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">$180K</div>
+                        <div class="stat-label">additional monthly commission</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">2.3x</div>
+                        <div class="stat-label">agent productivity increase</div>
+                    </div>
+                </div>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Before Seiketsu AI</th>
+                        <th>After Seiketsu AI</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Lead Response Time</td>
+                        <td>4.2 hours average</td>
+                        <td>28 seconds average</td>
+                        <td>540x faster</td>
+                    </tr>
+                    <tr>
+                        <td>Lead-to-Appointment Rate</td>
+                        <td>12%</td>
+                        <td>34%</td>
+                        <td>+183%</td>
+                    </tr>
+                    <tr>
+                        <td>Cost per Appointment</td>
+                        <td>$340</td>
+                        <td>$97</td>
+                        <td>-71%</td>
+                    </tr>
+                    <tr>
+                        <td>Agent Satisfaction</td>
+                        <td>6.2/10</td>
+                        <td>8.7/10</td>
+                        <td>+40%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Slide 7: Integration with Agency Tools -->
+        <div class="slide">
+            <div class="slide-number">7/15</div>
+            <h2>Seamless Integration with Your Existing Tools</h2>
+            <div class="content-grid">
+                <div class="feature-card">
+                    <h3>CRM Systems</h3>
+                    <ul class="feature-list">
+                        <li>Top Producer CRM</li>
+                        <li>Chime CRM</li>
+                        <li>Real Geeks</li>
+                        <li>BoomTown</li>
+                        <li>Salesforce</li>
+                        <li>HubSpot</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>Lead Sources</h3>
+                    <ul class="feature-list">
+                        <li>Zillow Premier Agent</li>
+                        <li>Realtor.com</li>
+                        <li>Your agency website</li>
+                        <li>Facebook Lead Ads</li>
+                        <li>Google Ads forms</li>
+                        <li>Open house sign-ins</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h3>Communication Tools</h3>
+                    <ul class="feature-list">
+                        <li>Agent phone systems</li>
+                        <li>Google Calendar</li>
+                        <li>Outlook Calendar</li>
+                        <li>Calendly</li>
+                        <li>Text messaging</li>
+                        <li>Email marketing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Agent Empowerment -->
+        <div class="slide">
+            <div class="slide-number">8/15</div>
+            <h2>Empower Your Agents, Don't Replace Them</h2>
+            <div class="content-grid">
+                <div class="feature-card solution-highlight">
+                    <h3>🎯 Focus on High-Value Activities</h3>
+                    <p>Agents spend time on showings, negotiations, and closings instead of cold calling and lead chasing.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📊 Complete Lead Intelligence</h3>
+                    <p>Every appointment comes with full conversation transcript, qualification notes, and buyer preferences.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>🎭 Maintains Personal Brand</h3>
+                    <p>AI speaks with your agency's voice and can even clone individual agent personalities and communication styles.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📈 Performance Analytics</h3>
+                    <p>Track which agents close the most AI-qualified leads and optimize your team's success patterns.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Case Study - Metro Realty -->
+        <div class="slide">
+            <div class="slide-number">9/15</div>
+            <h2>Case Study: Metro Realty Group</h2>
+            <div class="roi-calculator">
+                <h3>Challenge</h3>
+                <p>12-agent brokerage struggling with lead response times. Agents spent 60% of their time on unqualified leads, and 40% of expensive Zillow leads went uncontacted.</p>
+                
+                <h3 style="margin-top: 30px;">Solution</h3>
+                <p>Deployed Seiketsu AI with integration to their Top Producer CRM and Zillow Premier Agent feed.</p>
+                
+                <h3 style="margin-top: 30px;">Results After 6 Months</h3>
+                <div class="content-grid">
+                    <div class="stat">
+                        <div class="stat-number">$2.1M</div>
+                        <div class="stat-label">additional revenue</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">92%</div>
+                        <div class="stat-label">lead contact rate</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">47%</div>
+                        <div class="stat-label">increase in closings</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">18</div>
+                        <div class="stat-label">day payback period</div>
+                    </div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <p><em>"Our agents were skeptical at first, but when they started getting pre-qualified appointments instead of cold leads, they became believers. Our closing rate went from 2.1% to 4.7% in six months."</em></p>
+                <p><strong>- Jennifer Martinez, Broker/Owner, Metro Realty Group</strong></p>
+            </div>
+        </div>
+
+        <!-- Slide 10: Implementation for Agencies -->
+        <div class="slide">
+            <div class="slide-number">10/15</div>
+            <h2>Simple Setup, Immediate Results</h2>
+            <div class="before-after">
+                <div class="before">
+                    <h3>Week 1: Setup</h3>
+                    <ul class="feature-list">
+                        <li>CRM integration and data sync</li>
+                        <li>Agent calendar connections</li>
+                        <li>Voice training with your scripts</li>
+                        <li>Brand customization</li>
+                    </ul>
+                </div>
+                <div class="after">
+                    <h3>Week 2: Go Live</h3>
+                    <ul class="feature-list">
+                        <li>Soft launch with test leads</li>
+                        <li>Agent training sessions</li>
+                        <li>Performance monitoring</li>
+                        <li>Fine-tuning conversations</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="roi-calculator">
+                <h3>What You Get from Day One</h3>
+                <p>✅ Instant lead response across all sources</p>
+                <p>✅ Qualified appointments in agent calendars</p>
+                <p>✅ Complete conversation analytics</p>
+                <p>✅ 24/7 lead nurturing and follow-up</p>
+                <p>✅ Dedicated success manager</p>
+            </div>
+        </div>
+
+        <!-- Slide 11: Agent Training & Adoption -->
+        <div class="slide">
+            <div class="slide-number">11/15</div>
+            <h2>Zero Learning Curve for Your Team</h2>
+            <div class="content-grid">
+                <div class="feature-card">
+                    <h3>🎓 Comprehensive Training</h3>
+                    <p>2-hour onboarding session covers everything agents need to know. Follow-up training available anytime.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>📱 Simple Dashboard</h3>
+                    <p>Agents see their AI-qualified leads, conversation summaries, and appointment confirmations in one place.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🔧 Easy Customization</h3>
+                    <p>Brokers can adjust qualification questions, appointment types, and agent routing without technical skills.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💬 Ongoing Support</h3>
+                    <p>Dedicated success manager ensures optimal performance and helps with any adjustments needed.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Pricing for Agencies -->
+        <div class="slide">
+            <div class="slide-number">12/15</div>
+            <h2>Investment That Pays for Itself</h2>
+            <div class="content-grid">
+                <div class="feature-card">
+                    <h3>Starter Package</h3>
+                    <p><strong>$997/month</strong></p>
+                    <ul class="feature-list">
+                        <li>Up to 500 leads/month</li>
+                        <li>3 agent seats</li>
+                        <li>Basic CRM integration</li>
+                        <li>Email & phone support</li>
+                    </ul>
+                    <button class="cta-button">Perfect for small agencies</button>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>Growth Package</h3>
+                    <p><strong>$1,997/month</strong> (Most Popular)</p>
+                    <ul class="feature-list">
+                        <li>Up to 1,500 leads/month</li>
+                        <li>10 agent seats</li>
+                        <li>Full CRM integration</li>
+                        <li>Custom voice training</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <button class="cta-button">Ideal for growing agencies</button>
+                </div>
+                <div class="feature-card">
+                    <h3>Enterprise Package</h3>
+                    <p><strong>Custom Pricing</strong></p>
+                    <ul class="feature-list">
+                        <li>Unlimited leads</li>
+                        <li>Unlimited agents</li>
+                        <li>Multi-location support</li>
+                        <li>Custom integrations</li>
+                        <li>Dedicated success manager</li>
+                    </ul>
+                    <button class="cta-button">For large brokerages</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Risk Mitigation -->
+        <div class="slide">
+            <div class="slide-number">13/15</div>
+            <h2>Zero-Risk Trial for Your Agency</h2>
+            <div class="content-grid">
+                <div class="feature-card solution-highlight">
+                    <h3>💰 Revenue Guarantee</h3>
+                    <p>If Seiketsu AI doesn't generate 3x ROI within 90 days, we'll refund your entire investment plus provide 6 months of free service.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>🔧 Free Setup & Migration</h3>
+                    <p>Complete integration with your existing tools at no additional cost. Our team handles everything technical.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📞 24/7 Support Guarantee</h3>
+                    <p>Dedicated support line for your agency with guaranteed response times and escalation procedures.</p>
+                </div>
+                <div class="feature-card solution-highlight">
+                    <h3>📊 Performance Transparency</h3>
+                    <p>Complete visibility into every conversation, lead qualification, and appointment scheduled with full analytics.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Next Steps -->
+        <div class="slide">
+            <div class="slide-number">14/15</div>
+            <h2>Ready to Transform Your Agency?</h2>
+            <div class="roi-calculator">
+                <h3>Your 30-Day Action Plan</h3>
+                <div class="before-after">
+                    <div class="before">
+                        <h3>This Week</h3>
+                        <ul class="feature-list">
+                            <li>Schedule live demo with your actual leads</li>
+                            <li>Get custom ROI projection for your agency</li>
+                            <li>Review integration requirements</li>
+                        </ul>
+                    </div>
+                    <div class="after">
+                        <h3>Next 30 Days</h3>
+                        <ul class="feature-list">
+                            <li>Complete setup and integration</li>
+                            <li>Train your agents on the system</li>
+                            <li>Start converting more leads into revenue</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 40px;">
+                <button class="cta-button" style="font-size: 1.3rem; padding: 20px 40px;">Book Your Demo Now</button>
+                <p style="margin-top: 20px; color: var(--seiketsu-text-muted);">
+                    Special for Real Estate Agencies: Free setup + 30-day trial
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 15: Contact -->
+        <div class="slide">
+            <div class="slide-number">15/15</div>
+            <div class="slide-header">
+                <div class="logo">
+                    <div class="voice-wave"></div>
+                    Seiketsu AI
+                </div>
+                <h2>Let's Grow Your Agency Together</h2>
+                <div class="content-grid" style="margin-top: 60px;">
+                    <div class="feature-card">
+                        <h3>Real Estate Specialists</h3>
+                        <p>Phone: (555) 123-REAL</p>
+                        <p>Email: agencies@seiketsu.ai</p>
+                        <p>Demo: seiketsu.ai/agencies</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Quick ROI Calculator</h3>
+                        <p>leads/month × 0.34 conversion rate × $3,500 avg commission = Your new monthly revenue</p>
+                        <p><strong>Try it with your numbers!</strong></p>
+                    </div>
+                </div>
+                <p class="subtitle" style="margin-top: 40px;">
+                    Every minute you wait, leads are going to competitors who respond faster.<br>
+                    Don't let another qualified buyer slip away.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

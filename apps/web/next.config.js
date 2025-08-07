@@ -6,12 +6,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
-  experimental: {
-    ppr: true,
-    reactCompiler: true,
-    webpackBuildWorker: true,
-    optimizeCss: true,
-  },
   // Performance optimizations
   compress: true,
   poweredByHeader: false,

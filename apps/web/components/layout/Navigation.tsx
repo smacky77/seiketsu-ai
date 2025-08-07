@@ -10,6 +10,7 @@ export default function Navigation() {
   const navigation = [
     { name: 'How It Works', href: '#how-it-works' },
     { name: 'Features', href: '#features' },
+    { name: 'ROI Calculator', href: '/roi-calculator', special: true },
     { name: 'Pricing', href: '#pricing' },
     { name: 'Demo', href: '#demo' },
   ]
@@ -32,7 +33,11 @@ export default function Navigation() {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className={`transition-colors ${
+                  item.special 
+                    ? 'bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent font-semibold hover:from-green-700 hover:to-blue-700'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
                 {item.name}
               </a>
@@ -73,7 +78,11 @@ export default function Navigation() {
                 <a
                   key={item.name}
                   href={item.href}
-                  className="block text-muted-foreground hover:text-foreground transition-colors"
+                  className={`block transition-colors ${
+                    item.special 
+                      ? 'bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                   onClick={() => setIsOpen(false)}
                 >
                   {item.name}

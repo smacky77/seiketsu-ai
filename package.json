@@ -1,13 +1,65 @@
 {
   "name": "seiketsu-ai",
   "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "apps/*"
-  ],
+  "description": "Enterprise AI voice agent platform for real estate professionals",
+  "main": "index.js",
   "scripts": {
-    "dev": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=apps/web",
-    "start": "npm run start --workspace=apps/web"
-  }
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd apps/web && npm run dev",
+    "dev:backend": "cd apps/api && python3 -m uvicorn main:app --reload --port 8000",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd apps/web && npm run build",
+    "build:backend": "cd apps/api && python3 -m build",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd apps/web && npm run test",
+    "test:backend": "cd apps/api && python3 -m pytest",
+    "install:bmad": "echo 'BMAD method already configured in FINAL SEIKETSU/web-bundles/'",
+    "setup:project": "npm run setup:frontend && npm run setup:backend",
+    "setup:frontend": "cd apps/web && npm install",
+    "setup:backend": "cd apps/api && pip3 install -r requirements.txt",
+    "claude:flow": "bash claude-flow-workflow.sh",
+    "docs:shard": "md-tree explode",
+    "docs:validate": "npm run docs:validate:prd && npm run docs:validate:architecture",
+    "docs:validate:prd": "echo 'Validating PRD shards...'",
+    "docs:validate:architecture": "echo 'Validating Architecture shards...'",
+    "fix:css-configuration": "echo 'Fixing CSS configuration...' && npm run setup:frontend",
+    "resolve:lockfile-conflicts": "rm -f pnpm-lock.yaml yarn.lock && npm install",
+    "test:frontend-compilation": "cd apps/web && npm run build",
+    "clean": "rm -rf node_modules apps/*/node_modules && npm install",
+    "audit:fix": "npm audit fix",
+    "start": "npm run dev",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd apps/web && npm run lint",
+    "lint:backend": "cd apps/api && ruff check .",
+    "typecheck": "cd apps/web && npx tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "voice",
+    "real-estate",
+    "nextjs",
+    "fastapi",
+    "supabase",
+    "aws"
+  ],
+  "author": "Seiketsu AI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@21st-extension/toolbar": "^0.5.14",
+    "@kayvan/markdown-tree-parser": "^1.6.0",
+    "concurrently": "^8.2.2"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "packageManager": "npm@10.9.2"
 }

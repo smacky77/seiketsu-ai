@@ -1,0 +1,177 @@
+{
+  "categories": {
+    "getting_started": {
+      "title": "Getting Started",
+      "description": "Everything you need to launch successfully",
+      "priority": 1,
+      "articles": [
+        {
+          "id": "quick_start_guide",
+          "title": "5-Minute Quick Start Guide",
+          "summary": "Get your voice agent running in 5 minutes",
+          "tags": ["quickstart", "setup", "voice"],
+          "views": 15420,
+          "rating": 4.9,
+          "last_updated": "2024-08-06",
+          "content": "# 5-Minute Quick Start Guide\n\n🚀 **Welcome to Seiketsu AI!** Let's get your voice agent qualifying leads in just 5 minutes.\n\n## Step 1: API Configuration (1 minute)\n```bash\n# Add your API key to environment\nexport SEIKETSU_API_KEY=sk-seiketsu-your-key-here\n```\n\n## Step 2: Voice Setup (2 minutes)\n1. Navigate to Voice Settings\n2. Add ElevenLabs API key\n3. Select voice model (we recommend 'Rachel - Professional')\n4. Test voice output\n\n## Step 3: Lead Qualification Rules (2 minutes)\n```json\n{\n  \"qualification_criteria\": {\n    \"budget_minimum\": 500000,\n    \"timeline_months\": 6,\n    \"location_radius\": 25\n  }\n}\n```\n\n✅ **You're live!** Your voice agent is now ready to qualify leads.",
+          "video_url": "https://videos.seiketsu.ai/quick-start",
+          "related_articles": ["api_integration_guide", "voice_configuration"]
+        },
+        {
+          "id": "api_integration_guide",
+          "title": "Complete API Integration Guide",
+          "summary": "Step-by-step API integration with code examples",
+          "tags": ["api", "integration", "development"],
+          "views": 8750,
+          "rating": 4.8,
+          "content": "# Complete API Integration Guide\n\n## Authentication\n```javascript\nconst headers = {\n  'Authorization': 'Bearer sk-seiketsu-your-key',\n  'Content-Type': 'application/json'\n};\n```\n\n## Voice Processing\n```javascript\nconst response = await fetch('https://api.seiketsu.ai/v1/voice/process', {\n  method: 'POST',\n  headers,\n  body: JSON.stringify({\n    audio_data: base64Audio,\n    lead_context: leadInfo\n  })\n});\n```\n\n## Lead Management\n```javascript\n// Create lead\nconst lead = await fetch('https://api.seiketsu.ai/v1/leads', {\n  method: 'POST',\n  headers,\n  body: JSON.stringify(leadData)\n});\n```"
+        }
+      ]
+    },
+    
+    "api_integration": {
+      "title": "API Integration",
+      "description": "Technical integration guides and troubleshooting",
+      "priority": 2,
+      "articles": [
+        {
+          "id": "authentication_setup",
+          "title": "API Authentication Setup",
+          "summary": "Complete guide to API key setup and security",
+          "tags": ["authentication", "security", "api-keys"],
+          "views": 12500,
+          "rating": 4.7,
+          "content": "# API Authentication Setup\n\n## Getting Your API Key\n1. Navigate to Settings > API Keys\n2. Click 'Generate New Key'\n3. Copy and store securely (it won't be shown again)\n\n## Implementation\n```bash\n# Environment variable (recommended)\nexport SEIKETSU_API_KEY=sk-seiketsu-xxxxx\n```\n\n```javascript\n// In your application\nconst apiKey = process.env.SEIKETSU_API_KEY;\nconst headers = {\n  'Authorization': `Bearer ${apiKey}`,\n  'Content-Type': 'application/json'\n};\n```\n\n## Security Best Practices\n- ✅ Store API keys in environment variables\n- ✅ Use HTTPS only\n- ✅ Rotate keys quarterly\n- ❌ Never commit keys to version control\n- ❌ Don't share keys in support tickets"
+        },
+        {
+          "id": "rate_limiting",
+          "title": "Rate Limiting & Optimization",
+          "summary": "Understanding and optimizing API usage",
+          "tags": ["rate-limits", "optimization", "performance"],
+          "views": 6800,
+          "rating": 4.6,
+          "content": "# Rate Limiting & Optimization\n\n## Current Limits\n- **Starter**: 100 requests/minute\n- **Professional**: 1,000 requests/minute\n- **Enterprise**: Custom limits\n\n## Optimization Strategies\n\n### 1. Exponential Backoff\n```javascript\nasync function apiRequestWithBackoff(url, options, maxRetries = 3) {\n  for (let i = 0; i < maxRetries; i++) {\n    try {\n      const response = await fetch(url, options);\n      if (response.status === 429) {\n        await sleep(Math.pow(2, i) * 1000);\n        continue;\n      }\n      return response;\n    } catch (error) {\n      if (i === maxRetries - 1) throw error;\n    }\n  }\n}\n```\n\n### 2. Request Batching\n```javascript\n// Instead of multiple single requests\nconst leads = await Promise.all([\n  processLead(lead1),\n  processLead(lead2),\n  processLead(lead3)\n]);\n\n// Use batch endpoint\nconst leads = await processBatchLeads([lead1, lead2, lead3]);\n```"
+        }
+      ]
+    },
+    
+    "voice_configuration": {
+      "title": "Voice Agent Configuration",
+      "description": "Setting up and optimizing your AI voice agent",
+      "priority": 3,
+      "articles": [
+        {
+          "id": "voice_model_selection",
+          "title": "Choosing the Right Voice Model",
+          "summary": "Guide to selecting optimal voice models for real estate",
+          "tags": ["voice", "models", "optimization"],
+          "views": 9200,
+          "rating": 4.8,
+          "content": "# Choosing the Right Voice Model\n\n## Recommended Models\n\n### 🏆 **Rachel - Professional** (Most Popular)\n- **Best for**: General real estate inquiries\n- **Tone**: Warm, professional, trustworthy\n- **Accent**: Neutral American\n- **Speed**: Natural pace\n- **Use case**: 80% of our clients choose this\n\n### 💼 **Marcus - Executive**\n- **Best for**: Luxury real estate, commercial\n- **Tone**: Authoritative, sophisticated\n- **Accent**: Slight East Coast\n- **Speed**: Slightly slower, more deliberate\n\n### 🌟 **Sarah - Friendly**\n- **Best for**: First-time homebuyers, residential\n- **Tone**: Approachable, enthusiastic\n- **Accent**: Neutral American\n- **Speed**: Slightly faster, energetic\n\n## A/B Testing Results\nBased on 50,000+ interactions:\n- Rachel: 89% completion rate\n- Marcus: 85% completion rate\n- Sarah: 92% completion rate (first-time buyers only)\n\n## Custom Voice Training\nEnterprise clients can train custom voices:\n- Minimum 30 minutes of high-quality audio\n- Professional recording studio recommended\n- 2-week training period\n- $2,500 setup fee"
+        },
+        {
+          "id": "prompt_engineering",
+          "title": "Real Estate Prompt Engineering",
+          "summary": "Crafting effective prompts for lead qualification",
+          "tags": ["prompts", "ai", "lead-qualification"],
+          "views": 7100,
+          "rating": 4.9,
+          "content": "# Real Estate Prompt Engineering\n\n## Base Prompt Template\n```\nYou are Rachel, a professional real estate assistant for [AGENCY_NAME]. You help qualify potential buyers and sellers with warmth and expertise.\n\nYour goals:\n1. Understand the caller's real estate needs\n2. Qualify their budget and timeline\n3. Gather contact information\n4. Schedule a consultation if qualified\n\nPersonality: Professional, warm, knowledgeable, never pushy\n\nImportant rules:\n- Always confirm understanding before moving forward\n- If unsure about property details, offer to connect them with an agent\n- Keep interactions under 3 minutes when possible\n- End with clear next steps\n```\n\n## High-Converting Qualification Sequence\n\n### 1. Opening (15 seconds)\n\"Hi! I'm Rachel with [AGENCY]. I'd love to help you with your real estate needs. Are you looking to buy or sell a property?\"\n\n### 2. Needs Assessment (30 seconds)\n**For Buyers:**\n\"What type of property interests you most? And what area are you focusing on?\"\n\n**For Sellers:**\n\"Tell me about the property you're considering selling. What's prompting you to sell?\"\n\n### 3. Budget Qualification (45 seconds)\n**For Buyers:**\n\"To help find the perfect match, what budget range are you comfortable with?\"\n\n**For Sellers:**\n\"Do you have a target timeline for selling? And do you need to buy another property?\"\n\n### 4. Timeline & Contact (30 seconds)\n\"Perfect! When would be a good time for one of our specialists to call you with some options? And what's the best number to reach you?\"\n\n## Advanced Techniques\n\n### Objection Handling\n```\nIf prospect says budget is too high:\n\"I understand budget is important. We work with many financing options and can often find creative solutions. Would you like to hear about some alternatives that might work better for you?\"\n\nIf prospect hesitates on contact info:\n\"I totally understand being cautious with your information. How about I just take your first name and email, and you can decide later if you'd like a call?\"\n```"
+        }
+      ]
+    },
+    
+    "lead_management": {
+      "title": "Lead Management",
+      "description": "Managing and optimizing your lead pipeline",
+      "priority": 4,
+      "articles": [
+        {
+          "id": "lead_scoring_setup",
+          "title": "Advanced Lead Scoring Configuration",
+          "summary": "Set up intelligent lead scoring for maximum ROI",
+          "tags": ["lead-scoring", "automation", "roi"],
+          "views": 5900,
+          "rating": 4.7,
+          "content": "# Advanced Lead Scoring Configuration\n\n## Default Scoring Model\nOur AI automatically scores leads 1-100 based on:\n\n### Budget Factors (40% weight)\n- Stated budget range\n- Financing pre-approval status\n- Cash buyer indicators\n- Price range flexibility\n\n### Timeline Factors (30% weight)\n- Urgency indicators\n- Current housing situation\n- Moving timeline\n- Market timing awareness\n\n### Engagement Factors (20% weight)\n- Question quality and depth\n- Response time\n- Follow-up willingness\n- Information sharing openness\n\n### Demographic Factors (10% weight)\n- Geographic location\n- Age and family status\n- Previous real estate experience\n- Professional background\n\n## Custom Scoring Rules\n\n```json\n{\n  \"scoring_rules\": {\n    \"budget_minimum\": {\n      \"threshold\": 500000,\n      \"points\": 25,\n      \"operator\": \"gte\"\n    },\n    \"timeline_urgent\": {\n      \"keywords\": [\"ASAP\", \"immediately\", \"this month\"],\n      \"points\": 20\n    },\n    \"cash_buyer\": {\n      \"keywords\": [\"cash\", \"no financing\", \"no loan\"],\n      \"points\": 30\n    },\n    \"repeat_client\": {\n      \"condition\": \"previous_transactions > 0\",\n      \"points\": 15\n    }\n  }\n}\n```\n\n## Lead Grade Distribution\n- **A+ Leads (90-100)**: 8% of total - Immediate follow-up\n- **A Leads (80-89)**: 15% of total - Same day contact\n- **B Leads (70-79)**: 25% of total - Within 24 hours\n- **C Leads (60-69)**: 30% of total - Within 48 hours\n- **D Leads (50-59)**: 22% of total - Nurture sequence"
+        }
+      ]
+    },
+    
+    "troubleshooting": {
+      "title": "Troubleshooting",
+      "description": "Quick fixes for common issues",
+      "priority": 5,
+      "articles": [
+        {
+          "id": "common_api_errors",
+          "title": "Common API Errors & Solutions",
+          "summary": "Quick fixes for the most common API issues",
+          "tags": ["troubleshooting", "api", "errors"],
+          "views": 11200,
+          "rating": 4.5,
+          "content": "# Common API Errors & Solutions\n\n## 401 Unauthorized\n**Symptoms:** \"Invalid API key\" or \"Authentication failed\"\n\n**Solutions:**\n1. ✅ Verify API key format: `sk-seiketsu-xxxxx`\n2. ✅ Check for extra spaces or line breaks\n3. ✅ Ensure key is active (not expired)\n4. ✅ Verify account status\n\n```bash\n# Test authentication\ncurl -H \"Authorization: Bearer YOUR_KEY\" \\\n  https://api.seiketsu.ai/v1/health\n```\n\n## 429 Rate Limited\n**Symptoms:** \"Too Many Requests\" or slow responses\n\n**Solutions:**\n1. ✅ Implement exponential backoff\n2. ✅ Reduce request frequency\n3. ✅ Use batch endpoints\n4. ✅ Consider plan upgrade\n\n```javascript\n// Rate limiting helper\nfunction sleep(ms) {\n  return new Promise(resolve => setTimeout(resolve, ms));\n}\n```\n\n## 422 Validation Error\n**Symptoms:** \"Invalid request format\" or field errors\n\n**Solutions:**\n1. ✅ Check required fields\n2. ✅ Validate data types\n3. ✅ Review API documentation\n4. ✅ Use API playground to test\n\n## 500 Internal Server Error\n**Symptoms:** Server errors or timeouts\n\n**Solutions:**\n1. ✅ Retry request (may be temporary)\n2. ✅ Check status page: status.seiketsu.ai\n3. ✅ Contact support if persistent\n4. ✅ Implement circuit breaker pattern"
+        },
+        {
+          "id": "voice_quality_issues",
+          "title": "Voice Quality Troubleshooting",
+          "summary": "Fixing voice clarity, latency, and accuracy issues",
+          "tags": ["voice", "quality", "audio"],
+          "views": 4200,
+          "rating": 4.6,
+          "content": "# Voice Quality Troubleshooting\n\n## Poor Voice Clarity\n\n### Symptoms\n- Robotic or unnatural speech\n- Muffled audio quality\n- Inconsistent pronunciation\n\n### Solutions\n1. **Upgrade Voice Model**\n   - Switch to higher quality model\n   - Consider custom voice training\n\n2. **Audio Settings Optimization**\n   ```json\n   {\n     \"voice_settings\": {\n       \"stability\": 0.75,\n       \"similarity_boost\": 0.75,\n       \"style\": 0.25,\n       \"use_speaker_boost\": true\n     }\n   }\n   ```\n\n3. **Content Optimization**\n   - Remove special characters\n   - Add natural pauses with commas\n   - Use phonetic spelling for difficult names\n\n## High Latency Issues\n\n### Symptoms\n- Long delays before voice starts\n- Choppy or interrupted playback\n- Timeout errors\n\n### Solutions\n1. **Optimize Request Size**\n   - Keep text under 1000 characters\n   - Use streaming for longer content\n   - Implement text chunking\n\n2. **Caching Strategy**\n   ```javascript\n   // Cache common responses\n   const commonPhrases = {\n     'greeting': 'cached_audio_url_1',\n     'goodbye': 'cached_audio_url_2'\n   };\n   ```\n\n3. **Regional Optimization**\n   - Use closest API endpoint\n   - Enable CDN for audio delivery\n   - Consider edge computing"
+        }
+      ]
+    },
+    
+    "billing_support": {
+      "title": "Billing & Subscriptions",
+      "description": "Account management and billing questions",
+      "priority": 6,
+      "articles": [
+        {
+          "id": "plan_comparison",
+          "title": "Plan Comparison & Upgrade Guide",
+          "summary": "Choose the right plan for your business needs",
+          "tags": ["pricing", "plans", "upgrade"],
+          "views": 8900,
+          "rating": 4.8,
+          "content": "# Plan Comparison & Upgrade Guide\n\n## Current Plans Overview\n\n### 🚀 Starter ($99/month)\n- 1,000 voice interactions/month\n- Basic lead scoring\n- Email support\n- Standard voice models\n- API access\n\n**Best for:** Solo agents, small teams\n\n### 💼 Professional ($299/month)\n- 5,000 voice interactions/month\n- Advanced lead scoring & routing\n- Priority support (4-hour SLA)\n- Premium voice models\n- CRM integrations\n- Analytics dashboard\n\n**Best for:** Growing agencies, teams of 5-15\n\n### 🏆 Enterprise (Custom)\n- Unlimited interactions\n- Custom voice training\n- White-glove support (15-min SLA)\n- Dedicated success manager\n- Custom integrations\n- Advanced analytics\n- Multi-location support\n\n**Best for:** Large brokerages, franchises\n\n## Upgrade Process\n1. Go to Settings > Billing\n2. Click \"Upgrade Plan\"\n3. Select new plan\n4. Confirm billing details\n5. Changes take effect immediately\n\n## Billing Cycle Changes\n- Upgrades: Prorated immediately\n- Downgrades: Effective next billing cycle\n- Usage overages: Billed monthly\n\n## Enterprise Sales\nFor enterprise pricing:\n- 📧 sales@seiketsu.ai\n- 📞 1-800-SEIKETSU ext. 2\n- 📅 Schedule demo: calendly.com/seiketsu-sales"
+        }
+      ]
+    }
+  },
+  
+  "quick_actions": {
+    "generate_api_key": {
+      "title": "Generate New API Key",
+      "endpoint": "/api/keys/generate",
+      "method": "POST",
+      "success_message": "New API key generated successfully! Check your email for the key."
+    },
+    "upgrade_plan": {
+      "title": "Upgrade Account",
+      "url": "/settings/billing/upgrade",
+      "success_message": "Redirecting to upgrade options..."
+    },
+    "download_postman": {
+      "title": "Download Postman Collection",
+      "url": "/downloads/seiketsu-api.postman_collection.json",
+      "success_message": "Postman collection downloaded!"
+    },
+    "schedule_demo": {
+      "title": "Schedule Demo",
+      "url": "https://calendly.com/seiketsu-demo",
+      "success_message": "Opening demo scheduler..."
+    }
+  },
+  
+  "metadata": {
+    "last_updated": "2024-08-06T10:00:00Z",
+    "version": "2.1.0",
+    "total_articles": 47,
+    "languages": ["en"],
+    "search_indexed": true,
+    "analytics_enabled": true
+  }
+}

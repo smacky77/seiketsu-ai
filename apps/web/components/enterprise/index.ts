@@ -5,7 +5,6 @@ export { default as VoiceAgentControlCenter } from './voice-agent-control-center
 export { default as LeadManagementSystem } from './lead-management-system'
 export { default as MultiTenantAdmin } from './multi-tenant-admin'
 export { default as RealTimeCommunicationHub } from './real-time-communication-hub'
-export { default as AnalyticsDashboard } from './analytics-dashboard'
 export { default as IntegrationManagementCenter } from './integration-management-center'
 
 // Re-export types for external use
@@ -24,7 +23,6 @@ export const ENTERPRISE_COMPONENTS = {
   LEAD_MANAGEMENT: 'lead-management-system',
   MULTI_TENANT: 'multi-tenant-admin',
   COMMUNICATION: 'real-time-communication-hub',
-  ANALYTICS: 'analytics-dashboard',
   INTEGRATIONS: 'integration-management-center'
 } as const
 

@@ -1,22 +1,40 @@
 """
-Analytics service for tracking events and metrics
+Advanced Analytics Service with 21dev.ai Integration
+Real-time metrics, ML insights, and performance optimization
 """
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, desc
+import httpx
+import asyncio
+import json
 
 from app.models.analytics import AnalyticsEvent
 from app.models.conversation import Conversation, ConversationStatus
 from app.models.lead import Lead, LeadStatus
 from app.models.voice_agent import VoiceAgent
+from app.core.config import settings
+from app.core.cache import cache_result, get_cached_result
 
 logger = logging.getLogger("seiketsu.analytics_service")
 
 
 class AnalyticsService:
-    """Service for tracking analytics events and generating reports"""
+    """Advanced analytics service with 21dev.ai integration for ML insights"""
+    
+    def __init__(self):
+        self.twentyonedev_client = None
+        if settings.TWENTYONEDEV_API_KEY:
+            self.twentyonedev_client = httpx.AsyncClient(
+                base_url=settings.TWENTYONEDEV_BASE_URL,
+                headers={
+                    "Authorization": f"Bearer {settings.TWENTYONEDEV_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                timeout=settings.TWENTYONEDEV_TIMEOUT
+            )
     
     async def track_event(
         self,

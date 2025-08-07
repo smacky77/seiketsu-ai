@@ -28,8 +28,14 @@ export default function ConversionForm() {
 
   const handleSubmit = () => {
     // Handle form submission
-    console.log('Form submitted:', formData)
-    setFormStep(4) // Success step
+    try {
+      // Process form data here
+      // In production, this would send data to API
+      setFormStep(4) // Success step
+    } catch (error) {
+      // Handle submission error
+      setFormStep(3) // Stay on current step
+    }
   }
 
   const challenges = [

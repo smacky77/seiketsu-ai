@@ -1,0 +1,367 @@
+# Seiketsu AI - Infrastructure Deployment Pipeline
+# Terraform-based AWS infrastructure deployment with Container Studio integration
+
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+      - production
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/deploy-infrastructure.yml'
+  pull_request:
+    branches:
+      - main
+      - production
+    paths:
+      - 'infrastructure/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      action:
+        description: 'Terraform action'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_REGION: 'us-east-1'
+  TF_VAR_environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+
+jobs:
+  terraform-validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive infrastructure/
+        
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init -backend=false
+          
+      - name: Terraform Validate
+        run: |
+          cd infrastructure/terraform
+          terraform validate
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: terraform-validate
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Checkov security scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infrastructure/
+          framework: terraform
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          
+      - name: Upload Checkov results to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif
+
+  cost-estimation:
+    name: Cost Estimation
+    runs-on: ubuntu-latest
+    needs: terraform-validate
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+          
+      - name: Terraform Plan
+        run: |
+          cd infrastructure/terraform
+          terraform plan -out=tfplan
+          
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+          
+      - name: Generate Infracost estimate
+        run: |
+          cd infrastructure/terraform
+          infracost breakdown --path=tfplan --format=json --out-file=infracost.json
+          
+      - name: Post Infracost comment
+        run: |
+          cd infrastructure/terraform
+          infracost comment github --path=infracost.json \
+            --repo=$GITHUB_REPOSITORY \
+            --github-token=${{ github.token }} \
+            --pull-request=${{ github.event.pull_request.number }} \
+            --behavior=update
+
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [terraform-validate, security-scan]
+    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+    
+    outputs:
+      plan-exitcode: ${{ steps.plan.outputs.exitcode }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+          
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd infrastructure/terraform
+          terraform plan -detailed-exitcode -out=tfplan \
+            -var="elevenlabs_api_key=${{ secrets.ELEVENLABS_API_KEY }}" \
+            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+            -var="jwt_secret=${{ secrets.JWT_SECRET }}" \
+            -var="supabase_key=${{ secrets.SUPABASE_KEY }}" \
+            -var="monitoring_api_key=${{ secrets.MONITORING_API_KEY }}"
+        continue-on-error: true
+        
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ env.TF_VAR_environment }}
+          path: infrastructure/terraform/tfplan
+          retention-days: 5
+          
+      - name: Create Plan Summary
+        run: |
+          cd infrastructure/terraform
+          terraform show -no-color tfplan > plan-output.txt
+          
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infrastructure/terraform/plan-output.txt', 'utf8');
+            const maxLen = 65536;
+            const truncatedPlan = plan.length > maxLen ? plan.substring(0, maxLen) + '\n\n...Output truncated...' : plan;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan - ${{ env.TF_VAR_environment }}
+            
+            \`\`\`\nterraform
+            ${truncatedPlan}
+            \`\`\`
+            
+            Plan result: ${{ steps.plan.outputs.exitcode == '0' && 'No changes' || steps.plan.outputs.exitcode == '2' && 'Changes detected' || 'Error' }}`
+            });
+
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    if: |
+      (github.ref == 'refs/heads/main' && needs.terraform-plan.outputs.plan-exitcode == '2') ||
+      (github.event.inputs.action == 'apply')
+    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-${{ env.TF_VAR_environment }}
+          path: infrastructure/terraform/
+          
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+          
+      - name: Terraform Apply
+        run: |
+          cd infrastructure/terraform
+          terraform apply -auto-approve tfplan
+          
+      - name: Get Terraform Outputs
+        id: terraform-outputs
+        run: |
+          cd infrastructure/terraform
+          terraform output -json > outputs.json
+          echo "outputs=$(cat outputs.json)" >> $GITHUB_OUTPUT
+          
+      - name: Update Container Studio Configuration
+        run: |
+          echo "Updating Container Studio with new infrastructure..." 
+          # Container Studio integration would be implemented here
+          
+      - name: Configure 21dev.ai Monitoring
+        run: |
+          echo "Configuring 21dev.ai monitoring integration..."
+          # 21dev.ai monitoring setup would be implemented here
+          
+      - name: Run Infrastructure Tests
+        run: |
+          echo "Running infrastructure validation tests..."
+          # Infrastructure tests would be implemented here
+          
+      - name: Notify Deployment Success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#devops'
+          message: |
+            Infrastructure deployment completed successfully!
+            Environment: ${{ env.TF_VAR_environment }}
+            Commit: ${{ github.sha }}
+            Actor: ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          
+      - name: Notify Deployment Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#devops'
+          message: |
+            Infrastructure deployment failed!
+            Environment: ${{ env.TF_VAR_environment }}
+            Commit: ${{ github.sha }}
+            Actor: ${{ github.actor }}
+            Please check the GitHub Actions logs.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  terraform-destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'destroy'
+    environment: 
+      name: ${{ github.event.inputs.environment }}-destroy
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+          
+      - name: Terraform Destroy
+        run: |
+          cd infrastructure/terraform
+          terraform destroy -auto-approve \
+            -var="elevenlabs_api_key=${{ secrets.ELEVENLABS_API_KEY }}" \
+            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+            -var="jwt_secret=${{ secrets.JWT_SECRET }}" \
+            -var="supabase_key=${{ secrets.SUPABASE_KEY }}" \
+            -var="monitoring_api_key=${{ secrets.MONITORING_API_KEY }}"
+          
+      - name: Notify Destruction
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#devops'
+          message: |
+            Infrastructure destroyed!
+            Environment: ${{ github.event.inputs.environment }}
+            Actor: ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

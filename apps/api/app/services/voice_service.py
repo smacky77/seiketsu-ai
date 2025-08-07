@@ -10,6 +10,7 @@ from datetime import datetime
 import aiohttp
 import openai
 from elevenlabs import generate, set_api_key, Voice, VoiceSettings
+from app.services.elevenlabs_service import elevenlabs_service, Language, AudioFormat
 
 from app.core.config import settings
 from app.models.conversation import Conversation, ConversationMessage, MessageType, MessageDirection
@@ -27,7 +28,7 @@ class VoiceService:
     
     def __init__(self):
         self.openai_client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        set_api_key(settings.ELEVEN_LABS_API_KEY)
+        self.elevenlabs_service = elevenlabs_service
         
         self.conversation_service = ConversationService()
         self.lead_service = LeadService()
@@ -40,8 +41,8 @@ class VoiceService:
     async def initialize(self):
         """Initialize voice service"""
         try:
-            # Test ElevenLabs connection
-            await self._test_elevenlabs_connection()
+            # Initialize ElevenLabs service
+            await self.elevenlabs_service.initialize()
             
             # Test OpenAI connection
             await self._test_openai_connection()
@@ -73,10 +74,13 @@ class VoiceService:
             )
             ai_time = time.time()
             
-            # Step 3: Text-to-Speech (50-80ms)
-            audio_response = await self._text_to_speech(
-                ai_response["text"], voice_agent
+            # Step 3: Text-to-Speech (50-80ms) using new ElevenLabs service
+            synthesis_result = await self.elevenlabs_service.synthesize_speech(
+                text=ai_response["text"],
+                voice_agent=voice_agent,
+                optimize_for_speed=True
             )
+            audio_response = synthesis_result.audio_data
             tts_time = time.time()
             
             # Calculate timing
@@ -148,9 +152,14 @@ class VoiceService:
                 metadata=call_metadata or {}
             )
             
-            # Generate greeting
+            # Generate greeting using new ElevenLabs service
             greeting_text = voice_agent.greeting_message or f"Hello! This is {voice_agent.name}. How can I help you today?"
-            greeting_audio = await self._text_to_speech(greeting_text, voice_agent)
+            synthesis_result = await self.elevenlabs_service.synthesize_speech(
+                text=greeting_text,
+                voice_agent=voice_agent,
+                enable_caching=True  # Cache greetings for faster response
+            )
+            greeting_audio = synthesis_result.audio_data
             
             # Save greeting message
             await self._save_conversation_message(
@@ -158,7 +167,7 @@ class VoiceService:
                 MessageType.AGENT_SPEECH,
                 MessageDirection.OUTBOUND,
                 greeting_text,
-                audio_url=greeting_audio.get("url") if isinstance(greeting_audio, dict) else None
+                audio_data=greeting_audio
             )
             
             # Send webhook notification
@@ -362,27 +371,26 @@ class VoiceService:
     async def _text_to_speech(
         self,
         text: str,
-        voice_agent: VoiceAgent
+        voice_agent: VoiceAgent,
+        language: str = "en"
     ) -> bytes:
-        """Convert text to speech using ElevenLabs"""
+        """Convert text to speech using ElevenLabs service"""
         try:
-            # Get voice settings for the agent
-            voice_settings = voice_agent.get_voice_settings_for_provider()
+            # Map language codes
+            lang_map = {
+                "en": Language.ENGLISH,
+                "es": Language.SPANISH,
+                "zh": Language.MANDARIN
+            }
             
-            # Generate audio using ElevenLabs
-            audio = generate(
+            synthesis_result = await self.elevenlabs_service.synthesize_speech(
                 text=text,
-                voice=voice_settings.get("voice_id", "21m00Tcm4TlvDq8ikWAM"),  # Default voice
-                model=voice_settings.get("model_id", "eleven_turbo_v2"),  # Fastest model
-                voice_settings=VoiceSettings(
-                    stability=voice_settings.get("voice_settings", {}).get("stability", 0.75),
-                    similarity_boost=voice_settings.get("voice_settings", {}).get("similarity_boost", 0.75),
-                    style=voice_settings.get("voice_settings", {}).get("style", 0.0),
-                    use_speaker_boost=voice_settings.get("voice_settings", {}).get("use_speaker_boost", True)
-                )
+                voice_agent=voice_agent,
+                language=lang_map.get(language, Language.ENGLISH),
+                optimize_for_speed=True
             )
             
-            return audio
+            return synthesis_result.audio_data
             
         except Exception as e:
             logger.error(f"Text-to-speech failed: {e}")
@@ -412,6 +420,7 @@ class VoiceService:
                 MessageType.AGENT_SPEECH,
                 MessageDirection.OUTBOUND,
                 ai_response,
+                audio_data=audio_response,
                 processing_time_ms=timing.get("total_ms", 0)
             )
             
@@ -425,6 +434,7 @@ class VoiceService:
         direction: MessageDirection,
         content: str,
         audio_url: Optional[str] = None,
+        audio_data: Optional[bytes] = None,
         processing_time_ms: Optional[float] = None
     ):
         """Save individual conversation message"""
@@ -470,19 +480,89 @@ class VoiceService:
         except Exception as e:
             logger.error(f"Lead qualification processing failed: {e}")
     
-    async def _test_elevenlabs_connection(self):
-        """Test ElevenLabs API connection"""
+    async def synthesize_speech_streaming(
+        self,
+        text: str,
+        voice_agent: VoiceAgent,
+        language: str = "en"
+    ):
+        """Stream audio synthesis for real-time applications"""
         try:
-            # Simple test generation
-            test_audio = generate(
-                text="Test",
-                voice="21m00Tcm4TlvDq8ikWAM",
-                model="eleven_turbo_v2"
-            )
-            logger.info("ElevenLabs connection test successful")
+            # Map language codes
+            lang_map = {
+                "en": Language.ENGLISH,
+                "es": Language.SPANISH,
+                "zh": Language.MANDARIN
+            }
+            
+            async for chunk in self.elevenlabs_service.synthesize_streaming(
+                text=text,
+                voice_agent=voice_agent,
+                language=lang_map.get(language, Language.ENGLISH)
+            ):
+                yield chunk
+                
         except Exception as e:
-            logger.error(f"ElevenLabs connection test failed: {e}")
+            logger.error(f"Streaming synthesis failed: {e}")
             raise
+    
+    async def pregenerate_agent_responses(
+        self,
+        voice_agent: VoiceAgent,
+        common_responses: List[str],
+        language: str = "en"
+    ):
+        """Pre-generate common responses for faster performance"""
+        try:
+            # Map language codes
+            lang_map = {
+                "en": Language.ENGLISH,
+                "es": Language.SPANISH,
+                "zh": Language.MANDARIN
+            }
+            
+            await self.elevenlabs_service.pregenerate_responses(
+                voice_agent=voice_agent,
+                responses=common_responses,
+                language=lang_map.get(language, Language.ENGLISH)
+            )
+            
+            logger.info(f"Pre-generated {len(common_responses)} responses for agent {voice_agent.name}")
+            
+        except Exception as e:
+            logger.error(f"Response pre-generation failed: {e}")
+    
+    async def get_voice_service_health(self) -> Dict[str, Any]:
+        """Get comprehensive voice service health status"""
+        try:
+            # Get ElevenLabs service health
+            elevenlabs_health = await self.elevenlabs_service.health_check()
+            
+            # Get voice service performance stats
+            voice_stats = self.performance_stats
+            
+            # Overall health assessment
+            overall_status = "healthy"
+            if elevenlabs_health["status"] != "healthy":
+                overall_status = "degraded"
+            elif voice_stats["average_ms"] > self.target_response_time_ms:
+                overall_status = "degraded"
+            
+            return {
+                "overall_status": overall_status,
+                "voice_processing": voice_stats,
+                "elevenlabs_service": elevenlabs_health,
+                "target_response_time_ms": self.target_response_time_ms,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            return {
+                "overall_status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
     
     async def _test_openai_connection(self):
         """Test OpenAI API connection"""

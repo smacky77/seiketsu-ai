@@ -44,11 +44,49 @@ class Settings(BaseSettings):
     
     # ElevenLabs settings
     ELEVEN_LABS_API_KEY: str = os.getenv("ELEVEN_LABS_API_KEY", "")
+    ELEVEN_LABS_BASE_URL: str = "https://api.elevenlabs.io/v1"
+    ELEVEN_LABS_TIMEOUT: int = 30
     
     # OpenAI settings
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    ELEVEN_LABS_BASE_URL: str = "https://api.elevenlabs.io/v1"
-    ELEVEN_LABS_TIMEOUT: int = 30
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview")
+    
+    # 21dev.ai integration settings
+    TWENTYONEDEV_API_KEY: str = os.getenv("TWENTYONE_DEV_API_KEY", "")
+    TWENTYONEDEV_BASE_URL: str = os.getenv("TWENTYONE_DEV_BASE_URL", "https://api.21dev.ai/v1")
+    TWENTYONEDEV_TIMEOUT: int = 30
+    
+    # Container Studio settings
+    CONTAINER_STUDIO_URL: str = os.getenv("CONTAINER_STUDIO_URL", "")
+    CONTAINER_STUDIO_TOKEN: str = os.getenv("CONTAINER_STUDIO_TOKEN", "")
+    
+    # AWS ECS settings
+    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+    ECS_CLUSTER_NAME: str = os.getenv("ECS_CLUSTER_NAME", "seiketsu-ai-cluster")
+    
+    # Celery settings for background jobs
+    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
+    CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
+    CELERY_TIMEZONE: str = "UTC"
+    
+    # Voice processing settings
+    VOICE_RESPONSE_TIMEOUT_MS: int = int(os.getenv("VOICE_RESPONSE_TIMEOUT_MS", "2000"))
+    VOICE_QUALITY_BITRATE: int = int(os.getenv("VOICE_QUALITY_BITRATE", "128"))
+    MAX_CONVERSATION_DURATION_MINUTES: int = int(os.getenv("MAX_CONVERSATION_DURATION_MINUTES", "60"))
+    
+    # Multi-tenant settings
+    ENABLE_MULTI_TENANT: bool = os.getenv("ENABLE_MULTI_TENANT", "true").lower() == "true"
+    DEFAULT_TENANT_ID: str = os.getenv("DEFAULT_TENANT_ID", "default")
+    
+    # Real estate data settings
+    MLS_API_KEY: str = os.getenv("MLS_API_KEY", "")
+    ZILLOW_API_KEY: str = os.getenv("ZILLOW_API_KEY", "")
+    
+    # Lead scoring settings
+    LEAD_SCORING_MODEL_PATH: str = os.getenv("LEAD_SCORING_MODEL_PATH", "models/lead_scoring.pkl")
+    LEAD_QUALIFICATION_THRESHOLD: float = float(os.getenv("LEAD_QUALIFICATION_THRESHOLD", "0.7"))
     
     # CORS settings
     CORS_ORIGINS: List[str] = [

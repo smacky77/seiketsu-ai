@@ -1,0 +1,81 @@
+# Seiketsu AI Infrastructure Configuration
+# Copy this file to terraform.tfvars and fill in your values
+
+# Basic Configuration
+aws_region   = "us-east-1"
+environment  = "prod"
+project_name = "seiketsu-ai"
+vpc_cidr     = "10.0.0.0/16"
+domain_name  = "app.seiketsu.ai"
+
+# API Keys (use environment variables or AWS Secrets Manager)
+# elevenlabs_api_key = "your-elevenlabs-api-key"
+# openai_api_key     = "your-openai-api-key"
+# jwt_secret         = "your-jwt-secret"
+# supabase_key       = "your-supabase-key"
+# monitoring_api_key = "your-21dev-ai-api-key"
+
+# Monitoring Configuration
+monitoring_endpoint = "https://api.21dev.ai/metrics"
+monitoring_provider = "21dev-ai"
+alert_channels      = ["slack", "email", "pagerduty"]
+
+# Multi-tenant Configuration
+max_tenant_instances    = 40
+tenant_isolation_level  = "hybrid"
+
+# Performance Configuration
+voice_response_sla_ms = 2000
+api_response_sla_ms   = 500
+
+# Scaling Configuration
+auto_scaling_enabled = true
+min_capacity        = 2
+max_capacity        = 40
+
+# Database Configuration
+db_instance_class           = "db.r6g.2xlarge"
+db_allocated_storage        = 1000
+db_backup_retention_period  = 30
+
+# Cache Configuration
+redis_node_type         = "cache.r6g.xlarge"
+redis_num_cache_clusters = 3
+
+# Security Configuration
+enable_encryption_at_rest    = true
+enable_encryption_in_transit = true
+soc2_compliance_enabled      = true
+
+# Monitoring Configuration
+cloudwatch_log_retention_days = 30
+enable_detailed_monitoring   = true
+
+# Container Studio Configuration
+container_studio_enabled         = true
+container_orchestration_engine   = "ecs"
+
+# Cost Optimization
+enable_cost_optimization  = true
+use_spot_instances        = true
+enable_scheduled_scaling  = true
+
+# Environment-specific overrides
+# Uncomment and modify for different environments
+
+# For staging environment:
+# environment = "staging"
+# db_instance_class = "db.t3.medium"
+# redis_node_type = "cache.t3.micro"
+# min_capacity = 1
+# max_capacity = 10
+# db_backup_retention_period = 7
+
+# For development environment:
+# environment = "dev"
+# db_instance_class = "db.t3.micro"
+# redis_node_type = "cache.t3.micro"
+# min_capacity = 1
+# max_capacity = 5
+# enable_detailed_monitoring = false
+# use_spot_instances = true
