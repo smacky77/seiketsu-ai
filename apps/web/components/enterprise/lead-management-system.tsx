@@ -225,11 +225,11 @@ export function LeadManagementSystem({
         return true
       })
       .sort((a, b) => {
-        const aValue = a[sortBy]
-        const bValue = b[sortBy]
+        const aValue = a[sortBy as keyof typeof a]
+        const bValue = b[sortBy as keyof typeof b]
         
-        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1
-        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1
+        if (aValue && bValue && aValue < bValue) return sortOrder === 'asc' ? -1 : 1
+        if (aValue && bValue && aValue > bValue) return sortOrder === 'asc' ? 1 : -1
         return 0
       })
   }, [leads, filters, sortBy, sortOrder])

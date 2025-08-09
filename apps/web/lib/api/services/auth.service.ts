@@ -50,9 +50,9 @@ class AuthService {
     );
     
     // Store tokens and user
-    this.setAuth(response);
+    this.setAuth(response.data);
     
-    return response;
+    return response.data;
   }
 
   // Register
@@ -63,9 +63,9 @@ class AuthService {
     );
     
     // Store tokens and user
-    this.setAuth(response);
+    this.setAuth(response.data);
     
-    return response;
+    return response.data;
   }
 
   // Logout
@@ -85,9 +85,9 @@ class AuthService {
     );
     
     // Update tokens
-    this.setAuth(response);
+    this.setAuth(response.data);
     
-    return response;
+    return response.data;
   }
 
   // Verify token
@@ -96,8 +96,8 @@ class AuthService {
       API_CONFIG.ENDPOINTS.AUTH.VERIFY
     );
     
-    this.currentUser = response.user;
-    return response.user;
+    this.currentUser = response.data.user;
+    return response.data.user;
   }
 
   // Get current user

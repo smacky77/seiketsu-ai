@@ -439,18 +439,12 @@ export class ConversationEngine {
   private updateQualificationData(text: string, intent: IntentRecognition): void {
     if (!this.context) return
     
-    const qualification = this.context.qualificationData || {
-      score: 0,
-      budget: { confidence: 0 },
-      timeline: { confidence: 0 },
-      location: { confidence: 0 },
-      propertyType: { confidence: 0 },
-      motivation: { confidence: 0 },
-      decisionMaker: { confidence: 0 }
+    const qualification: LeadQualificationData = this.context.qualificationData || {
+      score: 0
     }
     
     // Update based on extracted entities
-    if (intent.entities.budget) {
+    if (intent.entities.budget && Array.isArray(intent.entities.budget)) {
       qualification.budget = {
         min: Math.min(...intent.entities.budget),
         max: Math.max(...intent.entities.budget),
@@ -458,8 +452,8 @@ export class ConversationEngine {
       }
     }
     
-    if (intent.entities.timeline) {
-      const timelineMap: Record<string, string> = {
+    if (intent.entities.timeline && Array.isArray(intent.entities.timeline)) {
+      const timelineMap: Record<string, 'immediate' | 'soon' | 'exploring' | 'future'> = {
         'immediately': 'immediate',
         'asap': 'immediate',
         'soon': 'soon',
@@ -473,7 +467,7 @@ export class ConversationEngine {
       }
     }
     
-    if (intent.entities.location) {
+    if (intent.entities.location && Array.isArray(intent.entities.location)) {
       qualification.location = {
         preferred: intent.entities.location,
         flexibility: 0.7,
@@ -481,7 +475,7 @@ export class ConversationEngine {
       }
     }
     
-    if (intent.entities.propertyType) {
+    if (intent.entities.propertyType && Array.isArray(intent.entities.propertyType)) {
       qualification.propertyType = {
         type: intent.entities.propertyType[0],
         features: intent.entities.propertyType,
@@ -550,11 +544,11 @@ export class ConversationEngine {
   }
 
   // Event management
-  addEventListener(listener: VoiceAIEventListener): void {
+  addVoiceAIEventListener(listener: VoiceAIEventListener): void {
     this.listeners.push(listener)
   }
 
-  removeEventListener(listener: VoiceAIEventListener): void {
+  removeVoiceAIEventListener(listener: VoiceAIEventListener): void {
     const index = this.listeners.indexOf(listener)
     if (index > -1) {
       this.listeners.splice(index, 1)

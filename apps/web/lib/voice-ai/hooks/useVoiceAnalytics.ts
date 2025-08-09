@@ -4,7 +4,8 @@ import type {
   ConversationAnalytics,
   VoiceAIMetrics,
   ConversationContext,
-  ConversationTurn
+  ConversationTurn,
+  LeadQualificationData
 } from '../types'
 
 interface UseVoiceAnalyticsOptions {

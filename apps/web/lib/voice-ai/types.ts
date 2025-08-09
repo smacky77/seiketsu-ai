@@ -280,6 +280,25 @@ export interface VoiceAIMetrics {
 }
 
 export type VoiceAIEvent = 
+  | { type: 'initialized'; data: any }
+  | { type: 'listening_started'; data: any }
+  | { type: 'listening_stopped'; data: any }
+  | { type: 'recording_started'; data: any }
+  | { type: 'recording_stopped'; data: any }
+  | { type: 'speech_synthesized'; data: any }
+  | { type: 'text_processed'; data: any }
+  | { type: 'audio_processed'; data: any }
+  | { type: 'conversation_started'; data: any }
+  | { type: 'conversation_ended'; data: any }
+  | { type: 'connection_state_changed'; data: any }
+  | { type: 'ice_candidate'; data: any }
+  | { type: 'remote_stream'; data: any }
+  | { type: 'data_channel_open'; data: any }
+  | { type: 'data_channel_message'; data: any }
+  | { type: 'call_started'; data: any }
+  | { type: 'call_ended'; data: any }
+  | { type: 'microphone_muted'; data: any }
+  | { type: 'microphone_volume_changed'; data: any }
   | { type: 'voice_activity_start'; data: VoiceActivityDetection }
   | { type: 'voice_activity_end'; data: VoiceActivityDetection }
   | { type: 'speech_recognized'; data: SpeechToTextResult }

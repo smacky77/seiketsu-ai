@@ -6,6 +6,15 @@ interface OrganizationSwitcherProps {
   className?: string
 }
 
+export function useOrganizationContext() {
+  return {
+    currentOrg: { id: '1', name: 'Seiketsu AI', slug: 'seiketsu' },
+    organization: { id: '1', name: 'Seiketsu AI', slug: 'seiketsu' },
+    setCurrentOrg: () => {},
+    isAdmin: true
+  }
+}
+
 export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
   return (
     <div className={className}>
@@ -16,3 +25,5 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
     </div>
   )
 }
+
+export default OrganizationSwitcher

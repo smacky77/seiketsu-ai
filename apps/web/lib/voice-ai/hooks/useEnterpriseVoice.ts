@@ -65,7 +65,7 @@ export function useEnterpriseVoice(options: UseEnterpriseVoiceOptions) {
 
   // Refs
   const voiceServiceRef = useRef<EnterpriseVoiceService | null>(null)
-  const metricsIntervalRef = useRef<NodeJS.Timeout>()
+  const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize voice service
   useEffect(() => {

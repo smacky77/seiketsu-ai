@@ -328,10 +328,10 @@ export function VoiceAIProvider({
       emitEvent(event)
     }
     
-    audioProcessorRef.current?.addEventListener(forwardEvent)
-    webRTCRef.current?.addEventListener(forwardEvent)
-    aiModelRef.current?.addEventListener(forwardEvent)
-    conversationEngineRef.current?.addEventListener(forwardEvent)
+    audioProcessorRef.current?.addVoiceAIEventListener(forwardEvent)
+    webRTCRef.current?.addVoiceAIEventListener(forwardEvent)
+    aiModelRef.current?.addVoiceAIEventListener(forwardEvent)
+    conversationEngineRef.current?.addVoiceAIEventListener(forwardEvent)
   }
 
   // Emit event to all listeners
@@ -378,15 +378,11 @@ export function VoiceAIProvider({
 
   // Subscribe to store errors
   useEffect(() => {
-    return store.subscribe(
-      (state) => state.error,
-      (error) => {
-        if (error) {
-          onError?.(error)
-        }
-      }
-    )
-  }, [onError, store])
+    // Since we're using the hook directly, we can access the error from the store
+    if (store.error) {
+      onError?.(store.error)
+    }
+  }, [onError, store.error])
 
   const contextValue: VoiceAIContextValue = {
     // State
@@ -395,9 +391,9 @@ export function VoiceAIProvider({
     isListening: store.isListening,
     isSpeaking: store.isSpeaking,
     isProcessing: store.isProcessing,
-    currentAgent: store.activeAgent,
-    currentLead: store.currentLead,
-    error: store.error,
+    currentAgent: store.activeAgent || null,
+    currentLead: store.currentLead || null,
+    error: store.error || null,
     
     // Services
     audioProcessor: audioProcessorRef.current,

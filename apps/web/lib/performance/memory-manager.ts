@@ -201,7 +201,9 @@ class MemoryManager {
     // Auto-cleanup old conversations
     if (this.conversationData.size > this.config.maxConversationHistory) {
       const oldest = this.conversationData.keys().next().value
-      this.conversationData.delete(oldest)
+      if (oldest !== undefined) {
+        this.conversationData.delete(oldest)
+      }
     }
   }
 

@@ -345,7 +345,7 @@ export function useLeadQualification(options: UseLeadQualificationOptions = {}) 
     // Determine urgency level
     let urgencyLevel: QualificationInsights['urgencyLevel'] = 'low'
     
-    if (qualificationData.timeline?.urgency === 'immediate' && qualificationData.budget?.confidence > 0.7) {
+    if (qualificationData.timeline?.urgency === 'immediate' && (qualificationData.budget?.confidence ?? 0) > 0.7) {
       urgencyLevel = 'critical'
     } else if (qualificationData.timeline?.urgency === 'soon' || qualificationData.score > 80) {
       urgencyLevel = 'high'
@@ -360,7 +360,7 @@ export function useLeadQualification(options: UseLeadQualificationOptions = {}) 
     // Adjust based on specific factors
     if (qualificationData.timeline?.urgency === 'immediate') probability += 0.2
     if (qualificationData.decisionMaker?.isDecisionMaker) probability += 0.1
-    if (qualificationData.budget?.confidence > 0.8) probability += 0.1
+    if ((qualificationData.budget?.confidence ?? 0) > 0.8) probability += 0.1
 
     const conversionProbability = Math.min(1, Math.max(0, probability))
 
@@ -403,9 +403,9 @@ export function useLeadQualification(options: UseLeadQualificationOptions = {}) 
     }
 
     const updatedData = { ...currentData, ...updates }
-    updatedData.score = calculateScore(updatedData)
+    updatedData.score = calculateScore(updatedData as any)
 
-    updateQualificationData(updatedData)
+    updateQualificationData(updatedData as any)
   }, [qualificationData, calculateScore, updateQualificationData])
 
   // Create property inquiry from qualification data
@@ -416,7 +416,9 @@ export function useLeadQualification(options: UseLeadQualificationOptions = {}) 
       location: qualificationData.location?.preferred?.[0] || '',
       propertyType: qualificationData.propertyType?.type || '',
       features: qualificationData.propertyType?.features || [],
-      urgency: qualificationData.timeline?.urgency || 'exploring'
+      urgency: (qualificationData.timeline?.urgency === 'soon' ? 'within_month' : 
+                qualificationData.timeline?.urgency === 'future' ? 'within_quarter' :
+                qualificationData.timeline?.urgency) || 'exploring'
     }
 
     if (qualificationData.budget) {

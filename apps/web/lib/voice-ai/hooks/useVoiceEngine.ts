@@ -154,10 +154,10 @@ export function useVoiceEngine(options: UseVoiceEngineOptions) {
     }
 
     // Add listeners to all services
-    audioProcessorRef.current?.addEventListener(handleVoiceAIEvent)
-    webRTCRef.current?.addEventListener(handleVoiceAIEvent)
-    aiModelRef.current?.addEventListener(handleVoiceAIEvent)
-    conversationEngineRef.current?.addEventListener(handleVoiceAIEvent)
+    audioProcessorRef.current?.addVoiceAIEventListener(handleVoiceAIEvent)
+    webRTCRef.current?.addVoiceAIEventListener(handleVoiceAIEvent)
+    aiModelRef.current?.addVoiceAIEventListener(handleVoiceAIEvent)
+    conversationEngineRef.current?.addVoiceAIEventListener(handleVoiceAIEvent)
   }, [options.enableVAD])
 
   // Start listening for audio input

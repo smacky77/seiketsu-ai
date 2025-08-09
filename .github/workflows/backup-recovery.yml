@@ -1,0 +1,460 @@
+# Seiketsu AI - Backup and Disaster Recovery Workflow
+# Automated backup creation, testing, and disaster recovery procedures
+
+name: Backup and Disaster Recovery
+
+on:
+  schedule:
+    # Daily backups at 2 AM UTC
+    - cron: '0 2 * * *'
+    # Weekly full backup on Sunday at 1 AM UTC
+    - cron: '0 1 * * 0'
+  workflow_dispatch:
+    inputs:
+      backup_type:
+        description: 'Type of backup to perform'
+        required: true
+        default: 'incremental'
+        type: choice
+        options:
+          - incremental
+          - full
+          - database-only
+          - application-only
+      environment:
+        description: 'Environment to backup'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+          - all
+      test_restore:
+        description: 'Test restore after backup'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  AWS_REGION: us-east-1
+  BACKUP_TYPE: ${{ github.event.inputs.backup_type || (github.event.schedule == '0 1 * * 0' && 'full' || 'incremental') }}
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'production' }}
+  TEST_RESTORE: ${{ github.event.inputs.test_restore || 'true' }}
+
+jobs:
+  database-backup:
+    name: Database Backup
+    runs-on: ubuntu-latest
+    if: github.event.inputs.backup_type != 'application-only'
+    
+    strategy:
+      matrix:
+        environment: ${{ github.event.inputs.environment == 'all' && fromJson('["staging", "production"]') || fromJson(format('["{0}"]', github.event.inputs.environment || 'production')) }}
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Create RDS snapshot
+        id: rds-snapshot
+        run: |
+          DB_INSTANCE="seiketsu-ai-${{ matrix.environment }}-db"
+          SNAPSHOT_ID="seiketsu-ai-${{ matrix.environment }}-$(date +%Y%m%d-%H%M%S)"
+          
+          if [ "${{ env.BACKUP_TYPE }}" = "full" ]; then
+            SNAPSHOT_ID="$SNAPSHOT_ID-full"
+          else
+            SNAPSHOT_ID="$SNAPSHOT_ID-incremental"
+          fi
+          
+          echo "Creating RDS snapshot: $SNAPSHOT_ID"
+          
+          aws rds create-db-snapshot \
+            --db-instance-identifier $DB_INSTANCE \
+            --db-snapshot-identifier $SNAPSHOT_ID
+          
+          echo "snapshot_id=$SNAPSHOT_ID" >> $GITHUB_OUTPUT
+          
+          # Wait for snapshot to complete
+          echo "Waiting for snapshot to complete..."
+          aws rds wait db-snapshot-completed --db-snapshot-identifier $SNAPSHOT_ID
+          
+          echo "✅ RDS snapshot completed: $SNAPSHOT_ID"
+          
+      - name: Export RDS data to S3 (Full backup only)
+        if: env.BACKUP_TYPE == 'full'
+        run: |
+          EXPORT_TASK_ID="seiketsu-ai-${{ matrix.environment }}-export-$(date +%Y%m%d-%H%M%S)"
+          S3_BUCKET="seiketsu-ai-${{ matrix.environment }}-backups"
+          S3_PREFIX="database-exports/$(date +%Y/%m/%d)"
+          
+          # Start export task
+          aws rds start-export-task \
+            --export-task-identifier $EXPORT_TASK_ID \
+            --source-arn $(aws rds describe-db-snapshots --db-snapshot-identifier ${{ steps.rds-snapshot.outputs.snapshot_id }} --query 'DBSnapshots[0].DBSnapshotArn' --output text) \
+            --s3-bucket-name $S3_BUCKET \
+            --s3-prefix $S3_PREFIX \
+            --iam-role-arn arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/rds-s3-export-role \
+            --kms-key-id alias/seiketsu-ai-kms-key
+          
+          echo "✅ RDS export task started: $EXPORT_TASK_ID"
+          
+      - name: Backup ElastiCache (Redis)
+        run: |
+          CACHE_CLUSTER="seiketsu-ai-${{ matrix.environment }}-cache"
+          BACKUP_ID="seiketsu-ai-cache-${{ matrix.environment }}-$(date +%Y%m%d-%H%M%S)"
+          
+          echo "Creating ElastiCache backup: $BACKUP_ID"
+          
+          aws elasticache create-snapshot \
+            --cache-cluster-id $CACHE_CLUSTER \
+            --snapshot-name $BACKUP_ID
+          
+          echo "✅ ElastiCache backup initiated: $BACKUP_ID"
+          
+      - name: Clean old snapshots
+        run: |
+          # Keep last 7 daily snapshots and 4 weekly snapshots
+          echo "Cleaning up old RDS snapshots..."
+          
+          # Get snapshots for this environment
+          aws rds describe-db-snapshots \
+            --db-instance-identifier seiketsu-ai-${{ matrix.environment }}-db \
+            --snapshot-type manual \
+            --query 'DBSnapshots[?contains(DBSnapshotIdentifier, `seiketsu-ai-${{ matrix.environment }}`)].{Id:DBSnapshotIdentifier,Created:SnapshotCreateTime}' \
+            --output table
+          
+          # Delete snapshots older than 7 days (keep weekly)
+          aws rds describe-db-snapshots \
+            --db-instance-identifier seiketsu-ai-${{ matrix.environment }}-db \
+            --snapshot-type manual \
+            --query 'DBSnapshots[?contains(DBSnapshotIdentifier, `seiketsu-ai-${{ matrix.environment }}`) && SnapshotCreateTime < `'$(date -d '7 days ago' -u +%Y-%m-%dT%H:%M:%S.000Z)'` && !contains(DBSnapshotIdentifier, `full`)].DBSnapshotIdentifier' \
+            --output text | tr '\t' '\n' | while read snapshot; do
+              if [ ! -z "$snapshot" ]; then
+                echo "Deleting old snapshot: $snapshot"
+                aws rds delete-db-snapshot --db-snapshot-identifier $snapshot
+              fi
+            done
+          
+          # Clean ElastiCache snapshots (keep last 5)
+          echo "Cleaning up old ElastiCache snapshots..."
+          aws elasticache describe-snapshots \
+            --query 'Snapshots[?contains(SnapshotName, `seiketsu-ai-cache-${{ matrix.environment }}`)].SnapshotName' \
+            --output text | tr '\t' '\n' | sort -r | tail -n +6 | while read snapshot; do
+              if [ ! -z "$snapshot" ]; then
+                echo "Deleting old cache snapshot: $snapshot"
+                aws elasticache delete-snapshot --snapshot-name $snapshot
+              fi
+            done
+
+  application-backup:
+    name: Application Backup
+    runs-on: ubuntu-latest
+    if: github.event.inputs.backup_type != 'database-only'
+    
+    strategy:
+      matrix:
+        environment: ${{ github.event.inputs.environment == 'all' && fromJson('["staging", "production"]') || fromJson(format('["{0}"]', github.event.inputs.environment || 'production')) }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Backup application configuration
+        run: |
+          BACKUP_DATE=$(date +%Y%m%d-%H%M%S)
+          S3_BUCKET="seiketsu-ai-${{ matrix.environment }}-backups"
+          S3_PREFIX="application-backups/$BACKUP_DATE"
+          
+          mkdir -p backup-temp
+          
+          # Backup ECS task definitions
+          echo "Backing up ECS task definitions..."
+          aws ecs describe-task-definition --task-definition seiketsu-ai-${{ matrix.environment }}-api > backup-temp/ecs-task-definition.json
+          
+          # Backup API Gateway configuration
+          echo "Backing up API Gateway configuration..."
+          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='seiketsu-ai-${{ matrix.environment }}-api'].id" --output text)
+          if [ ! -z "$API_ID" ]; then
+            aws apigateway get-export --rest-api-id $API_ID --stage-name ${{ matrix.environment }} --export-type swagger > backup-temp/api-gateway-config.json
+          fi
+          
+          # Backup CloudFormation templates
+          echo "Backing up CloudFormation stacks..."
+          aws cloudformation describe-stacks --stack-name seiketsu-ai-${{ matrix.environment }} > backup-temp/cloudformation-stack.json || echo "No CloudFormation stack found"
+          
+          # Backup Lambda functions (if any)
+          echo "Backing up Lambda functions..."
+          aws lambda list-functions --query 'Functions[?contains(FunctionName, `seiketsu-ai-${{ matrix.environment }}`)].FunctionName' --output text | tr '\t' '\n' | while read func; do
+            if [ ! -z "$func" ]; then
+              aws lambda get-function --function-name $func > backup-temp/lambda-$func.json
+            fi
+          done
+          
+          # Create backup archive
+          tar -czf application-backup-$BACKUP_DATE.tar.gz backup-temp/
+          
+          # Upload to S3
+          aws s3 cp application-backup-$BACKUP_DATE.tar.gz s3://$S3_BUCKET/$S3_PREFIX/application-backup.tar.gz
+          
+          echo "✅ Application configuration backed up to s3://$S3_BUCKET/$S3_PREFIX/"
+          
+      - name: Backup Secrets Manager secrets
+        run: |
+          BACKUP_DATE=$(date +%Y%m%d-%H%M%S)
+          S3_BUCKET="seiketsu-ai-${{ matrix.environment }}-backups"
+          S3_PREFIX="secrets-backup/$BACKUP_DATE"
+          
+          echo "Backing up Secrets Manager secrets..."
+          
+          # List and backup all Seiketsu AI secrets
+          aws secretsmanager list-secrets --query "SecretList[?contains(Name, 'seiketsu-ai/${{ matrix.environment }}')].Name" --output text | tr '\t' '\n' | while read secret; do
+            if [ ! -z "$secret" ]; then
+              secret_file=$(echo $secret | tr '/' '-')
+              aws secretsmanager describe-secret --secret-id "$secret" > secrets-$secret_file.json
+              echo "Backed up secret: $secret"
+            fi
+          done
+          
+          # Upload secrets metadata (not values) to S3
+          if ls secrets-*.json 1> /dev/null 2>&1; then
+            tar -czf secrets-backup-$BACKUP_DATE.tar.gz secrets-*.json
+            aws s3 cp secrets-backup-$BACKUP_DATE.tar.gz s3://$S3_BUCKET/$S3_PREFIX/secrets-metadata.tar.gz
+            rm secrets-*.json secrets-backup-$BACKUP_DATE.tar.gz
+          fi
+          
+      - name: Backup container images
+        if: env.BACKUP_TYPE == 'full'
+        run: |
+          ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          
+          echo "Creating backup of container images..."
+          
+          # Get current image tags
+          API_IMAGE_TAGS=$(aws ecr describe-images --repository-name seiketsu-ai-api --query 'imageDetails[?contains(imageTags, `${{ matrix.environment }}`)].imageTags[]' --output text | tr '\t' '\n' | head -5)
+          
+          # Tag images for backup
+          for tag in $API_IMAGE_TAGS; do
+            if [ ! -z "$tag" ]; then
+              backup_tag="backup-$(date +%Y%m%d)-$tag"
+              
+              # Pull, tag, and push backup
+              docker pull $ECR_REGISTRY/seiketsu-ai-api:$tag
+              docker tag $ECR_REGISTRY/seiketsu-ai-api:$tag $ECR_REGISTRY/seiketsu-ai-api:$backup_tag
+              docker push $ECR_REGISTRY/seiketsu-ai-api:$backup_tag
+              
+              echo "✅ Backed up image: $tag -> $backup_tag"
+            fi
+          done
+
+  test-restore:
+    name: Test Restore Procedures
+    runs-on: ubuntu-latest
+    needs: [database-backup, application-backup]
+    if: |
+      (github.event.inputs.test_restore == 'true' || github.event.inputs.test_restore == true) && 
+      (needs.database-backup.result == 'success' || needs.application-backup.result == 'success')
+    
+    strategy:
+      matrix:
+        environment: ${{ github.event.inputs.environment == 'all' && fromJson('["staging"]') || fromJson('["staging"]') }}
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Test database restore
+        if: needs.database-backup.result == 'success'
+        run: |
+          echo "Testing database restore procedure..."
+          
+          # Find the latest snapshot
+          LATEST_SNAPSHOT=$(aws rds describe-db-snapshots \
+            --db-instance-identifier seiketsu-ai-production-db \
+            --snapshot-type manual \
+            --query 'DBSnapshots[?contains(DBSnapshotIdentifier, `seiketsu-ai-production`)].{Id:DBSnapshotIdentifier,Created:SnapshotCreateTime} | sort_by(@, &Created) | [-1].Id' \
+            --output text)
+          
+          if [ ! -z "$LATEST_SNAPSHOT" ]; then
+            TEST_DB_ID="test-restore-$(date +%Y%m%d-%H%M%S)"
+            
+            echo "Creating test database from snapshot: $LATEST_SNAPSHOT"
+            
+            # Create test database instance
+            aws rds restore-db-instance-from-db-snapshot \
+              --db-instance-identifier $TEST_DB_ID \
+              --db-snapshot-identifier $LATEST_SNAPSHOT \
+              --db-instance-class db.t3.micro \
+              --no-publicly-accessible \
+              --no-multi-az \
+              --storage-type gp2
+            
+            echo "Test database creation initiated: $TEST_DB_ID"
+            
+            # Wait for availability (with timeout)
+            echo "Waiting for test database to become available..."
+            timeout 1200 aws rds wait db-instance-available --db-instance-identifier $TEST_DB_ID || echo "Timeout waiting for test database"
+            
+            # Verify database is accessible
+            DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier $TEST_DB_ID --query 'DBInstances[0].DBInstanceStatus' --output text)
+            
+            if [ "$DB_STATUS" = "available" ]; then
+              echo "✅ Test database restore successful"
+              
+              # Clean up test database
+              echo "Cleaning up test database..."
+              aws rds delete-db-instance \
+                --db-instance-identifier $TEST_DB_ID \
+                --skip-final-snapshot \
+                --delete-automated-backups
+            else
+              echo "❌ Test database restore failed: $DB_STATUS"
+              exit 1
+            fi
+          else
+            echo "❌ No snapshots found to test restore"
+            exit 1
+          fi
+          
+      - name: Test application configuration restore
+        if: needs.application-backup.result == 'success'
+        run: |
+          echo "Testing application configuration restore..."
+          
+          S3_BUCKET="seiketsu-ai-production-backups"
+          
+          # Get latest backup
+          LATEST_BACKUP=$(aws s3 ls s3://$S3_BUCKET/application-backups/ --recursive | sort | tail -1 | awk '{print $4}')
+          
+          if [ ! -z "$LATEST_BACKUP" ]; then
+            echo "Testing restore of: $LATEST_BACKUP"
+            
+            # Download and extract backup
+            aws s3 cp s3://$S3_BUCKET/$LATEST_BACKUP ./test-backup.tar.gz
+            tar -xzf test-backup.tar.gz
+            
+            # Verify backup contents
+            if [ -f "backup-temp/ecs-task-definition.json" ]; then
+              echo "✅ ECS task definition backup found"
+              
+              # Validate JSON structure
+              if jq empty backup-temp/ecs-task-definition.json 2>/dev/null; then
+                echo "✅ ECS task definition is valid JSON"
+              else
+                echo "❌ ECS task definition JSON is invalid"
+                exit 1
+              fi
+            else
+              echo "❌ ECS task definition backup not found"
+              exit 1
+            fi
+            
+            echo "✅ Application configuration restore test passed"
+            
+            # Clean up
+            rm -rf backup-temp test-backup.tar.gz
+          else
+            echo "❌ No application backups found to test"
+            exit 1
+          fi
+
+  disaster-recovery-plan:
+    name: Update Disaster Recovery Plan
+    runs-on: ubuntu-latest
+    needs: [database-backup, application-backup, test-restore]
+    if: always() && (needs.database-backup.result == 'success' || needs.application-backup.result == 'success')
+    
+    steps:
+      - name: Generate disaster recovery report
+        run: |
+          echo "# Seiketsu AI Disaster Recovery Report" > dr-report.md
+          echo "Generated: $(date -u)" >> dr-report.md
+          echo "" >> dr-report.md
+          
+          echo "## Backup Status" >> dr-report.md
+          echo "- **Database Backup:** ${{ needs.database-backup.result }}" >> dr-report.md
+          echo "- **Application Backup:** ${{ needs.application-backup.result }}" >> dr-report.md
+          echo "- **Restore Test:** ${{ needs.test-restore.result }}" >> dr-report.md
+          echo "" >> dr-report.md
+          
+          echo "## Recovery Time Objectives (RTO)" >> dr-report.md
+          echo "- **Database:** 30 minutes" >> dr-report.md
+          echo "- **Application:** 15 minutes" >> dr-report.md
+          echo "- **Full Service:** 45 minutes" >> dr-report.md
+          echo "" >> dr-report.md
+          
+          echo "## Recovery Point Objectives (RPO)" >> dr-report.md
+          echo "- **Database:** 15 minutes (automated backups)" >> dr-report.md
+          echo "- **Application:** 24 hours (daily backups)" >> dr-report.md
+          echo "" >> dr-report.md
+          
+          echo "## Recovery Procedures" >> dr-report.md
+          echo "1. **Database Recovery:**" >> dr-report.md
+          echo "   - Restore from latest RDS snapshot" >> dr-report.md
+          echo "   - Apply transaction logs if needed" >> dr-report.md
+          echo "   - Update application connection strings" >> dr-report.md
+          echo "" >> dr-report.md
+          echo "2. **Application Recovery:**" >> dr-report.md
+          echo "   - Deploy from latest container images" >> dr-report.md
+          echo "   - Restore configuration from backup" >> dr-report.md
+          echo "   - Update DNS and load balancers" >> dr-report.md
+          echo "" >> dr-report.md
+          
+          echo "## Next Backup: $(date -d 'tomorrow 2:00' -u)" >> dr-report.md
+          echo "## Next Full Backup: $(date -d 'next sunday 1:00' -u)" >> dr-report.md
+          
+      - name: Upload DR report
+        uses: actions/upload-artifact@v4
+        with:
+          name: disaster-recovery-report-$(date +%Y%m%d)
+          path: dr-report.md
+          retention-days: 90
+          
+      - name: Update DR documentation in S3
+        run: |
+          aws s3 cp dr-report.md s3://seiketsu-ai-production-backups/disaster-recovery/latest-report.md
+          aws s3 cp dr-report.md s3://seiketsu-ai-production-backups/disaster-recovery/reports/dr-report-$(date +%Y%m%d).md
+
+  notify-backup-status:
+    name: Notify Backup Status
+    runs-on: ubuntu-latest
+    needs: [database-backup, application-backup, test-restore, disaster-recovery-plan]
+    if: always()
+    
+    steps:
+      - name: Send backup notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#backups'
+          message: |
+            🔄 Backup Operation Completed
+            
+            **Type:** ${{ env.BACKUP_TYPE }}
+            **Environment:** ${{ env.ENVIRONMENT }}
+            **Date:** $(date -u)
+            
+            **Status:**
+            - Database Backup: ${{ needs.database-backup.result == 'success' && '✅' || '❌' }}
+            - Application Backup: ${{ needs.application-backup.result == 'success' && '✅' || '❌' }}
+            - Restore Test: ${{ needs.test-restore.result == 'success' && '✅' || '❌' }}
+            
+            **Next scheduled backup:** $(date -d 'tomorrow 2:00' -u)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

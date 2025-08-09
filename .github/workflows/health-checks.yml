@@ -1,0 +1,559 @@
+# Seiketsu AI - Health Check and Monitoring Workflow
+# Automated health checks, performance monitoring, and alerting
+
+name: Health Checks and Monitoring
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to check'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+          - all
+      check_type:
+        description: 'Type of health check'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - basic
+          - full
+          - performance
+          - security
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'production' }}
+  CHECK_TYPE: ${{ github.event.inputs.check_type || 'basic' }}
+
+jobs:
+  health-check-frontend:
+    name: Frontend Health Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.check_type != 'security'
+    
+    strategy:
+      matrix:
+        environment: ${{ github.event.inputs.environment == 'all' && fromJson('["staging", "production"]') || fromJson(format('["{0}"]', github.event.inputs.environment || 'production')) }}
+    
+    steps:
+      - name: Check frontend availability
+        id: frontend-check
+        run: |
+          FRONTEND_URL="https://seiketsu-ai-${{ matrix.environment }}.com"
+          
+          echo "Checking frontend at $FRONTEND_URL"
+          
+          # Basic availability check
+          response=$(curl -s -o /dev/null -w "%{http_code},%{time_total},%{time_connect},%{time_starttransfer}" $FRONTEND_URL)
+          IFS=',' read -r http_code total_time connect_time ttfb <<< "$response"
+          
+          echo "http_code=$http_code" >> $GITHUB_OUTPUT
+          echo "total_time=$total_time" >> $GITHUB_OUTPUT
+          echo "connect_time=$connect_time" >> $GITHUB_OUTPUT
+          echo "ttfb=$ttfb" >> $GITHUB_OUTPUT
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Frontend is healthy"
+            echo "status=healthy" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Frontend check failed with status $http_code"
+            echo "status=unhealthy" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Performance check
+        if: github.event.inputs.check_type == 'full' || github.event.inputs.check_type == 'performance'
+        run: |
+          # Install lighthouse
+          npm install -g lighthouse
+          
+          FRONTEND_URL="https://seiketsu-ai-${{ matrix.environment }}.com"
+          
+          # Run lighthouse audit
+          lighthouse $FRONTEND_URL --output=json --output-path=./lighthouse-results.json --chrome-flags="--headless --no-sandbox"
+          
+          # Extract key metrics
+          performance_score=$(cat lighthouse-results.json | jq '.categories.performance.score * 100')
+          accessibility_score=$(cat lighthouse-results.json | jq '.categories.accessibility.score * 100')
+          best_practices_score=$(cat lighthouse-results.json | jq '.categories["best-practices"].score * 100')
+          seo_score=$(cat lighthouse-results.json | jq '.categories.seo.score * 100')
+          
+          echo "Performance: $performance_score"
+          echo "Accessibility: $accessibility_score"
+          echo "Best Practices: $best_practices_score"
+          echo "SEO: $seo_score"
+          
+          # Check if scores are below thresholds
+          if (( $(echo "$performance_score < 90" | bc -l) )); then
+            echo "⚠️ Performance score below threshold: $performance_score"
+          fi
+          
+      - name: Alert on frontend failure
+        if: steps.frontend-check.outputs.status == 'unhealthy'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#alerts'
+          message: |
+            🚨 Frontend Health Check Failed
+            
+            **Environment:** ${{ matrix.environment }}
+            **Status Code:** ${{ steps.frontend-check.outputs.http_code }}
+            **Response Time:** ${{ steps.frontend-check.outputs.total_time }}s
+            **Time:** $(date -u)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  health-check-api:
+    name: API Health Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.check_type != 'security'
+    
+    strategy:
+      matrix:
+        environment: ${{ github.event.inputs.environment == 'all' && fromJson('["staging", "production"]') || fromJson(format('["{0}"]', github.event.inputs.environment || 'production')) }}
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Get API endpoint
+        id: get-endpoint
+        run: |
+          ALB_DNS=$(aws elbv2 describe-load-balancers --names seiketsu-ai-${{ matrix.environment }}-alb --query 'LoadBalancers[0].DNSName' --output text)
+          API_URL="https://$ALB_DNS"
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          
+      - name: Basic API health check
+        id: api-health
+        run: |
+          API_URL="${{ steps.get-endpoint.outputs.api_url }}"
+          
+          # Health endpoint check
+          health_response=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" $API_URL/health)
+          IFS=',' read -r health_code health_time <<< "$health_response"
+          
+          echo "health_code=$health_code" >> $GITHUB_OUTPUT
+          echo "health_time=$health_time" >> $GITHUB_OUTPUT
+          
+          if [ "$health_code" -eq 200 ]; then
+            echo "✅ API health endpoint is healthy"
+            echo "health_status=healthy" >> $GITHUB_OUTPUT
+          else
+            echo "❌ API health check failed with status $health_code"
+            echo "health_status=unhealthy" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: API functionality tests
+        if: steps.api-health.outputs.health_status == 'healthy' && (github.event.inputs.check_type == 'full' || github.event.inputs.check_type == 'performance')
+        run: |
+          API_URL="${{ steps.get-endpoint.outputs.api_url }}"
+          
+          # Test authentication endpoint
+          auth_response=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" -X POST $API_URL/auth/test -H "Content-Type: application/json" -d '{"test": true}')
+          IFS=',' read -r auth_code auth_time <<< "$auth_response"
+          
+          # Test voice AI endpoint
+          voice_response=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" -X GET $API_URL/voice/status)
+          IFS=',' read -r voice_code voice_time <<< "$voice_response"
+          
+          echo "Auth endpoint: $auth_code ($auth_time s)"
+          echo "Voice endpoint: $voice_code ($voice_time s)"
+          
+          # Check response times
+          if (( $(echo "$auth_time > 2.0" | bc -l) )); then
+            echo "⚠️ Auth endpoint slow: ${auth_time}s"
+          fi
+          
+          if (( $(echo "$voice_time > 2.0" | bc -l) )); then
+            echo "⚠️ Voice endpoint slow: ${voice_time}s"
+          fi
+          
+      - name: Database connectivity check
+        run: |
+          # Check RDS connectivity through API
+          API_URL="${{ steps.get-endpoint.outputs.api_url }}"
+          db_check=$(curl -s $API_URL/health/database | jq -r '.status')
+          
+          if [ "$db_check" = "healthy" ]; then
+            echo "✅ Database connectivity is healthy"
+          else
+            echo "❌ Database connectivity issue detected"
+            exit 1
+          fi
+          
+      - name: Cache connectivity check
+        run: |
+          # Check Redis connectivity through API
+          API_URL="${{ steps.get-endpoint.outputs.api_url }}"
+          cache_check=$(curl -s $API_URL/health/cache | jq -r '.status')
+          
+          if [ "$cache_check" = "healthy" ]; then
+            echo "✅ Cache connectivity is healthy"
+          else
+            echo "❌ Cache connectivity issue detected"
+            exit 1
+          fi
+          
+      - name: Alert on API failure
+        if: steps.api-health.outputs.health_status == 'unhealthy'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#alerts'
+          message: |
+            🚨 API Health Check Failed
+            
+            **Environment:** ${{ matrix.environment }}
+            **Endpoint:** ${{ steps.get-endpoint.outputs.api_url }}
+            **Status Code:** ${{ steps.api-health.outputs.health_code }}
+            **Response Time:** ${{ steps.api-health.outputs.health_time }}s
+            **Time:** $(date -u)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  infrastructure-monitoring:
+    name: Infrastructure Monitoring
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'full'
+    
+    strategy:
+      matrix:
+        environment: ${{ github.event.inputs.environment == 'all' && fromJson('["staging", "production"]') || fromJson(format('["{0}"]', github.event.inputs.environment || 'production')) }}
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Check ECS cluster health
+        run: |
+          # Check ECS cluster status
+          cluster_status=$(aws ecs describe-clusters --clusters seiketsu-ai-${{ matrix.environment }}-cluster --query 'clusters[0].status' --output text)
+          running_tasks=$(aws ecs describe-clusters --clusters seiketsu-ai-${{ matrix.environment }}-cluster --query 'clusters[0].runningTasksCount' --output text)
+          active_services=$(aws ecs describe-clusters --clusters seiketsu-ai-${{ matrix.environment }}-cluster --query 'clusters[0].activeServicesCount' --output text)
+          
+          echo "Cluster Status: $cluster_status"
+          echo "Running Tasks: $running_tasks"
+          echo "Active Services: $active_services"
+          
+          if [ "$cluster_status" != "ACTIVE" ]; then
+            echo "❌ ECS cluster is not active"
+            exit 1
+          fi
+          
+          if [ "$running_tasks" -eq 0 ]; then
+            echo "❌ No tasks running in ECS cluster"
+            exit 1
+          fi
+          
+      - name: Check RDS status
+        run: |
+          # Check RDS instance status
+          db_status=$(aws rds describe-db-instances --db-instance-identifier seiketsu-ai-${{ matrix.environment }}-db --query 'DBInstances[0].DBInstanceStatus' --output text)
+          
+          echo "Database Status: $db_status"
+          
+          if [ "$db_status" != "available" ]; then
+            echo "❌ RDS instance is not available: $db_status"
+            exit 1
+          fi
+          
+      - name: Check ElastiCache status
+        run: |
+          # Check ElastiCache cluster status
+          cache_status=$(aws elasticache describe-cache-clusters --cache-cluster-id seiketsu-ai-${{ matrix.environment }}-cache --query 'CacheClusters[0].CacheClusterStatus' --output text)
+          
+          echo "Cache Status: $cache_status"
+          
+          if [ "$cache_status" != "available" ]; then
+            echo "❌ ElastiCache cluster is not available: $cache_status"
+            exit 1
+          fi
+          
+      - name: Check CloudFront distribution
+        run: |
+          # Check CloudFront distribution status
+          distribution_status=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Aliases.Items, 'seiketsu-ai-${{ matrix.environment }}.com')].Status" --output text)
+          
+          echo "CloudFront Status: $distribution_status"
+          
+          if [ "$distribution_status" != "Deployed" ]; then
+            echo "❌ CloudFront distribution is not deployed: $distribution_status"
+            exit 1
+          fi
+          
+      - name: Resource utilization check
+        run: |
+          # Get CPU and memory utilization from CloudWatch
+          end_time=$(date -u +%Y-%m-%dT%H:%M:%S)
+          start_time=$(date -u -d '15 minutes ago' +%Y-%m-%dT%H:%M:%S)
+          
+          # ECS CPU utilization
+          cpu_util=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/ECS \
+            --metric-name CPUUtilization \
+            --dimensions Name=ServiceName,Value=seiketsu-ai-${{ matrix.environment }}-api-service Name=ClusterName,Value=seiketsu-ai-${{ matrix.environment }}-cluster \
+            --statistics Average \
+            --start-time $start_time \
+            --end-time $end_time \
+            --period 300 \
+            --query 'Datapoints[0].Average' --output text)
+          
+          # ECS Memory utilization
+          mem_util=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/ECS \
+            --metric-name MemoryUtilization \
+            --dimensions Name=ServiceName,Value=seiketsu-ai-${{ matrix.environment }}-api-service Name=ClusterName,Value=seiketsu-ai-${{ matrix.environment }}-cluster \
+            --statistics Average \
+            --start-time $start_time \
+            --end-time $end_time \
+            --period 300 \
+            --query 'Datapoints[0].Average' --output text)
+          
+          echo "CPU Utilization: $cpu_util%"
+          echo "Memory Utilization: $mem_util%"
+          
+          # Alert if utilization is too high
+          if (( $(echo "$cpu_util > 80" | bc -l) )); then
+            echo "⚠️ High CPU utilization: $cpu_util%"
+          fi
+          
+          if (( $(echo "$mem_util > 80" | bc -l) )); then
+            echo "⚠️ High memory utilization: $mem_util%"
+          fi
+
+  security-monitoring:
+    name: Security Monitoring
+    runs-on: ubuntu-latest
+    if: github.event.inputs.check_type == 'security' || github.event.inputs.check_type == 'full'
+    
+    strategy:
+      matrix:
+        environment: ${{ github.event.inputs.environment == 'all' && fromJson('["staging", "production"]') || fromJson(format('["{0}"]', github.event.inputs.environment || 'production')) }}
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Check SSL certificate expiry
+        run: |
+          # Check SSL certificate for the domain
+          domain="seiketsu-ai-${{ matrix.environment }}.com"
+          
+          # Get certificate expiry date
+          expiry_date=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d= -f2)
+          
+          if [ ! -z "$expiry_date" ]; then
+            expiry_timestamp=$(date -d "$expiry_date" +%s)
+            current_timestamp=$(date +%s)
+            days_until_expiry=$(( (expiry_timestamp - current_timestamp) / 86400 ))
+            
+            echo "SSL certificate expires in $days_until_expiry days"
+            
+            if [ $days_until_expiry -lt 30 ]; then
+              echo "⚠️ SSL certificate expires soon: $days_until_expiry days"
+            fi
+          else
+            echo "❌ Could not check SSL certificate"
+            exit 1
+          fi
+          
+      - name: Check AWS WAF blocked requests
+        run: |
+          # Get WAF blocked requests in the last 15 minutes
+          end_time=$(date -u +%Y-%m-%dT%H:%M:%S)
+          start_time=$(date -u -d '15 minutes ago' +%Y-%m-%dT%H:%M:%S)
+          
+          blocked_requests=$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/WAFV2 \
+            --metric-name BlockedRequests \
+            --dimensions Name=WebACL,Value=seiketsu-ai-${{ matrix.environment }}-waf Name=Region,Value=${{ env.AWS_REGION }} \
+            --statistics Sum \
+            --start-time $start_time \
+            --end-time $end_time \
+            --period 900 \
+            --query 'Datapoints[0].Sum' --output text)
+          
+          if [ "$blocked_requests" != "None" ] && [ -n "$blocked_requests" ]; then
+            echo "Blocked requests in last 15 minutes: $blocked_requests"
+            
+            if (( $(echo "$blocked_requests > 100" | bc -l) )); then
+              echo "⚠️ High number of blocked requests: $blocked_requests"
+            fi
+          else
+            echo "No blocked requests detected"
+          fi
+          
+      - name: Check for unauthorized access attempts
+        run: |
+          # Check CloudTrail for unauthorized access attempts
+          suspicious_events=$(aws logs filter-log-events \
+            --log-group-name /aws/cloudtrail/seiketsu-ai-${{ matrix.environment }} \
+            --start-time $(date -d '15 minutes ago' +%s)000 \
+            --filter-pattern '[version, account, time, region, source, type="AwsApiCall", principal.type="Root"]' \
+            --query 'length(events)' --output text)
+          
+          if [ "$suspicious_events" -gt 0 ]; then
+            echo "⚠️ Suspicious root access events detected: $suspicious_events"
+          else
+            echo "No suspicious access events detected"
+          fi
+          
+      - name: Check security groups for open ports
+        run: |
+          # Check for security groups with wide-open access
+          open_sgs=$(aws ec2 describe-security-groups \
+            --query 'SecurityGroups[?IpPermissions[?IpRanges[?CidrIp==`0.0.0.0/0`]] && contains(GroupName, `seiketsu-ai-${{ matrix.environment }}`)].[GroupName, GroupId]' \
+            --output table)
+          
+          if [ -n "$open_sgs" ]; then
+            echo "⚠️ Security groups with 0.0.0.0/0 access found:"
+            echo "$open_sgs"
+          else
+            echo "No overly permissive security groups detected"
+          fi
+
+  cost-monitoring:
+    name: Cost Monitoring
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.check_type == 'full'
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Get cost and usage data
+        run: |
+          # Get yesterday's costs
+          yesterday=$(date -d 'yesterday' +%Y-%m-%d)
+          today=$(date +%Y-%m-%d)
+          
+          # Get costs for Seiketsu AI project
+          daily_cost=$(aws ce get-cost-and-usage \
+            --time-period Start=$yesterday,End=$today \
+            --granularity DAILY \
+            --metrics BlendedCost \
+            --group-by Type=DIMENSION,Key=SERVICE \
+            --filter '{"Tags":{"Key":"Project","Values":["Seiketsu-AI"]}}' \
+            --query 'ResultsByTime[0].Total.BlendedCost.Amount' --output text)
+          
+          echo "Yesterday's cost: \$${daily_cost}"
+          
+          # Get monthly costs so far
+          month_start=$(date +%Y-%m-01)
+          monthly_cost=$(aws ce get-cost-and-usage \
+            --time-period Start=$month_start,End=$today \
+            --granularity MONTHLY \
+            --metrics BlendedCost \
+            --filter '{"Tags":{"Key":"Project","Values":["Seiketsu-AI"]}}' \
+            --query 'ResultsByTime[0].Total.BlendedCost.Amount' --output text)
+          
+          echo "Month-to-date cost: \$${monthly_cost}"
+          
+          # Alert if costs are above thresholds
+          if (( $(echo "$daily_cost > 100" | bc -l) )); then
+            echo "⚠️ Daily cost above threshold: \$${daily_cost}"
+          fi
+          
+          if (( $(echo "$monthly_cost > 2000" | bc -l) )); then
+            echo "⚠️ Monthly cost above threshold: \$${monthly_cost}"
+          fi
+
+  generate-health-report:
+    name: Generate Health Report
+    runs-on: ubuntu-latest
+    needs: [health-check-frontend, health-check-api, infrastructure-monitoring, security-monitoring, cost-monitoring]
+    if: always()
+    
+    steps:
+      - name: Generate comprehensive health report
+        run: |
+          echo "# Seiketsu AI Health Report - $(date -u)" > health-report.md
+          echo "" >> health-report.md
+          
+          # Frontend status
+          echo "## Frontend Health" >> health-report.md
+          if [ "${{ needs.health-check-frontend.result }}" = "success" ]; then
+            echo "✅ Frontend services are healthy" >> health-report.md
+          else
+            echo "❌ Frontend issues detected" >> health-report.md
+          fi
+          echo "" >> health-report.md
+          
+          # API status
+          echo "## API Health" >> health-report.md
+          if [ "${{ needs.health-check-api.result }}" = "success" ]; then
+            echo "✅ API services are healthy" >> health-report.md
+          else
+            echo "❌ API issues detected" >> health-report.md
+          fi
+          echo "" >> health-report.md
+          
+          # Infrastructure status
+          echo "## Infrastructure Health" >> health-report.md
+          if [ "${{ needs.infrastructure-monitoring.result }}" = "success" ]; then
+            echo "✅ Infrastructure is healthy" >> health-report.md
+          else
+            echo "❌ Infrastructure issues detected" >> health-report.md
+          fi
+          echo "" >> health-report.md
+          
+          # Security status
+          echo "## Security Status" >> health-report.md
+          if [ "${{ needs.security-monitoring.result }}" = "success" ]; then
+            echo "✅ Security checks passed" >> health-report.md
+          else
+            echo "⚠️ Security alerts detected" >> health-report.md
+          fi
+          echo "" >> health-report.md
+          
+          echo "Generated at: $(date -u)" >> health-report.md
+          
+      - name: Upload health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-report-$(date +%Y%m%d-%H%M%S)
+          path: health-report.md
+          retention-days: 30
+          
+      - name: Send summary notification
+        if: github.event_name == 'schedule'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#monitoring'
+          message: |
+            📊 Health Check Summary - $(date -u)
+            
+            **Frontend:** ${{ needs.health-check-frontend.result == 'success' && '✅ Healthy' || '❌ Issues' }}
+            **API:** ${{ needs.health-check-api.result == 'success' && '✅ Healthy' || '❌ Issues' }}
+            **Infrastructure:** ${{ needs.infrastructure-monitoring.result == 'success' && '✅ Healthy' || '❌ Issues' }}
+            **Security:** ${{ needs.security-monitoring.result == 'success' && '✅ Healthy' || '⚠️ Alerts' }}
+            
+            Detailed report available in GitHub Actions artifacts.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

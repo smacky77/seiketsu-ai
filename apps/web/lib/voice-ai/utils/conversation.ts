@@ -541,7 +541,13 @@ export function createPropertyInquiryFromConversation(
     }
     
     if (qualification.timeline?.urgency) {
-      inquiry.urgency = qualification.timeline.urgency
+      const urgencyMap: Record<string, 'immediate' | 'within_month' | 'within_quarter' | 'exploring'> = {
+        'immediate': 'immediate',
+        'soon': 'within_month',
+        'future': 'within_quarter',
+        'exploring': 'exploring'
+      }
+      inquiry.urgency = urgencyMap[qualification.timeline.urgency] || 'exploring'
     }
   }
   
@@ -602,8 +608,8 @@ export function calculateConversationQuality(conversation: ConversationContext):
   const qualificationScore = conversation.qualificationData?.score || 0
   
   // Resolution quality (clear next steps, addressed concerns)
-  const hasNextSteps = conversation.analytics?.nextSteps.length > 0
-  const addressedConcerns = conversation.analytics?.objections.length === 0
+  const hasNextSteps = (conversation.analytics?.nextSteps?.length || 0) > 0
+  const addressedConcerns = (conversation.analytics?.objections?.length || 0) === 0
   const resolutionScore = (hasNextSteps ? 50 : 0) + (addressedConcerns ? 50 : 0)
   
   // Overall quality (weighted average)

@@ -338,8 +338,8 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     
     // Sort
     filtered.sort((a, b) => {
-      let aVal: any = a[sortBy]
-      let bVal: any = b[sortBy]
+      let aVal: any = (a as any)[sortBy]
+      let bVal: any = (b as any)[sortBy]
       
       if (sortBy === 'lastName') {
         aVal = a.contact.lastName

@@ -17,7 +17,7 @@ interface DashboardProps {
   timeRange?: string
 }
 
-export default function SeiketsuAnalyticsDashboard({ data, timeRange = '30d' }: DashboardProps) {
+function SeiketsuAnalyticsDashboard({ data, timeRange = '30d' }: DashboardProps) {
   return (
     <div className="space-y-8 p-6">
       {/* Key Performance Indicators */}
@@ -84,3 +84,6 @@ export default function SeiketsuAnalyticsDashboard({ data, timeRange = '30d' }: 
     </div>
   )
 }
+
+export default SeiketsuAnalyticsDashboard
+export { SeiketsuAnalyticsDashboard }

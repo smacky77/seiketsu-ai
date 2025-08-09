@@ -143,7 +143,7 @@ class PropertyService {
       totalPages: number;
     };
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       properties: Property[];
       total: number;
       pagination: {
@@ -152,6 +152,7 @@ class PropertyService {
         totalPages: number;
       };
     }>(API_CONFIG.ENDPOINTS.PROPERTIES.SEARCH, params);
+    return response.data;
   }
 
   // Get all properties
@@ -165,38 +166,42 @@ class PropertyService {
     properties: Property[];
     total: number;
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       properties: Property[];
       total: number;
     }>(API_CONFIG.ENDPOINTS.PROPERTIES.LIST, params);
+    return response.data;
   }
 
   // Get property by ID
   async getProperty(id: string): Promise<Property> {
-    return apiClient.get<Property>(
+    const response = await apiClient.get<Property>(
       API_CONFIG.ENDPOINTS.PROPERTIES.DETAILS,
       undefined,
       { id }
     );
+    return response.data;
   }
 
   // Create property
   async createProperty(data: Partial<Property>): Promise<Property> {
-    return apiClient.post<Property>(API_CONFIG.ENDPOINTS.PROPERTIES.LIST, data);
+    const response = await apiClient.post<Property>(API_CONFIG.ENDPOINTS.PROPERTIES.LIST, data);
+    return response.data;
   }
 
   // Update property
   async updateProperty(id: string, data: Partial<Property>): Promise<Property> {
-    return apiClient.put<Property>(
+    const response = await apiClient.put<Property>(
       API_CONFIG.ENDPOINTS.PROPERTIES.DETAILS,
       data,
       { id }
     );
+    return response.data;
   }
 
   // Delete property
   async deleteProperty(id: string): Promise<void> {
-    return apiClient.delete(
+    await apiClient.delete(
       API_CONFIG.ENDPOINTS.PROPERTIES.DETAILS,
       { id }
     );
@@ -212,11 +217,12 @@ class PropertyService {
     jobId: string;
     estimated: number;
   }> {
-    return apiClient.post<{
+    const response = await apiClient.post<{
       status: string;
       jobId: string;
       estimated: number;
     }>(API_CONFIG.ENDPOINTS.PROPERTIES.MLS_SYNC, params);
+    return response.data;
   }
 
   // Get MLS sync status
@@ -227,13 +233,14 @@ class PropertyService {
     total: number;
     errors: string[];
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       status: 'pending' | 'running' | 'completed' | 'failed';
       progress: number;
       processed: number;
       total: number;
       errors: string[];
     }>(API_CONFIG.ENDPOINTS.PROPERTIES.MLS_SYNC, { jobId });
+    return response.data;
   }
 
   // Get comparable properties
@@ -242,11 +249,12 @@ class PropertyService {
     maxResults?: number;
     timeframe?: number;
   }): Promise<Property[]> {
-    return apiClient.get<Property[]>(
+    const response = await apiClient.get<Property[]>(
       API_CONFIG.ENDPOINTS.PROPERTIES.DETAILS,
       { ...params, action: 'comparables' },
       { id: propertyId }
     );
+    return response.data;
   }
 
   // Get property analytics
@@ -256,10 +264,11 @@ class PropertyService {
     startDate?: string;
     endDate?: string;
   }): Promise<PropertyAnalytics> {
-    return apiClient.get<PropertyAnalytics>(
+    const response = await apiClient.get<PropertyAnalytics>(
       API_CONFIG.ENDPOINTS.PROPERTIES.ANALYTICS,
       params
     );
+    return response.data;
   }
 
   // Get property valuation
@@ -274,7 +283,7 @@ class PropertyService {
     comparables: Property[];
     marketTrends: MarketTrend;
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       estimatedValue: number;
       confidence: number;
       factors: Array<{
@@ -289,6 +298,7 @@ class PropertyService {
       { action: 'valuation' },
       { id: propertyId }
     );
+    return response.data;
   }
 
   // Get neighborhood insights
@@ -317,7 +327,7 @@ class PropertyService {
       appreciation: number;
     };
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       demographics: {
         population: number;
         medianAge: number;
@@ -342,11 +352,12 @@ class PropertyService {
         appreciation: number;
       };
     }>(API_CONFIG.ENDPOINTS.PROPERTIES.DETAILS, { location, action: 'neighborhood' });
+    return response.data;
   }
 
   // Save property to favorites
   async saveToFavorites(propertyId: string): Promise<void> {
-    return apiClient.post(
+    await apiClient.post(
       API_CONFIG.ENDPOINTS.PROPERTIES.DETAILS,
       { action: 'favorite' },
       { id: propertyId }
@@ -355,7 +366,7 @@ class PropertyService {
 
   // Remove property from favorites
   async removeFromFavorites(propertyId: string): Promise<void> {
-    return apiClient.delete(
+    await apiClient.delete(
       API_CONFIG.ENDPOINTS.PROPERTIES.DETAILS,
       { id: propertyId, action: 'favorite' }
     );
@@ -363,10 +374,11 @@ class PropertyService {
 
   // Get saved properties
   async getSavedProperties(): Promise<Property[]> {
-    return apiClient.get<Property[]>(
+    const response = await apiClient.get<Property[]>(
       API_CONFIG.ENDPOINTS.PROPERTIES.LIST,
       { saved: true }
     );
+    return response.data;
   }
 }
 

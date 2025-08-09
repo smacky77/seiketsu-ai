@@ -32,7 +32,7 @@ export class AudioProcessor extends EventTarget {
   private minVoiceDuration = 300 // ms
   private minSilenceDuration = 500 // ms
 
-  constructor(config: AudioStreamConfig) {
+  constructor(config: Partial<AudioStreamConfig> = {}) {
     super()
     this.config = {
       sampleRate: 44100,
@@ -154,8 +154,9 @@ export class AudioProcessor extends EventTarget {
     )
     
     // Initialize analysis buffers
-    this.frequencyData = new Uint8Array(this.analyserNode.frequencyBinCount)
-    this.timeDomainData = new Uint8Array(this.analyserNode.frequencyBinCount)
+    const bufferSize = this.analyserNode.frequencyBinCount
+    this.frequencyData = new Uint8Array(new ArrayBuffer(bufferSize))
+    this.timeDomainData = new Uint8Array(new ArrayBuffer(bufferSize))
     this.vadBuffer = new Float32Array(this.vadFrameSize)
     
     // Set up audio processing callback
@@ -181,8 +182,8 @@ export class AudioProcessor extends EventTarget {
     const currentTime = Date.now()
     
     // Update analysis data
-    this.analyserNode.getByteFrequencyData(this.frequencyData)
-    this.analyserNode.getByteTimeDomainData(this.timeDomainData)
+    this.analyserNode.getByteFrequencyData(this.frequencyData as any)
+    this.analyserNode.getByteTimeDomainData(this.timeDomainData as any)
     
     // Calculate audio level (RMS)
     let sum = 0
@@ -330,11 +331,11 @@ export class AudioProcessor extends EventTarget {
   }
 
   // Event management
-  addEventListener(listener: VoiceAIEventListener): void {
+  addVoiceAIEventListener(listener: VoiceAIEventListener): void {
     this.listeners.push(listener)
   }
 
-  removeEventListener(listener: VoiceAIEventListener): void {
+  removeVoiceAIEventListener(listener: VoiceAIEventListener): void {
     const index = this.listeners.indexOf(listener)
     if (index > -1) {
       this.listeners.splice(index, 1)
@@ -378,11 +379,11 @@ export class AudioProcessor extends EventTarget {
     }
   }
 
-  get audioContext(): AudioContext | null {
+  getAudioContext(): AudioContext | null {
     return this.audioContext
   }
 
-  get mediaStream(): MediaStream | null {
+  getMediaStream(): MediaStream | null {
     return this.mediaStream
   }
 }

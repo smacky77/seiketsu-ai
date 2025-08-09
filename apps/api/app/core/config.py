@@ -2,7 +2,7 @@
 Configuration settings for Seiketsu AI API
 """
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic_settings import BaseSettings
 from pydantic import validator
 import secrets
@@ -80,8 +80,20 @@ class Settings(BaseSettings):
     ENABLE_MULTI_TENANT: bool = os.getenv("ENABLE_MULTI_TENANT", "true").lower() == "true"
     DEFAULT_TENANT_ID: str = os.getenv("DEFAULT_TENANT_ID", "default")
     
+    # Third-party service settings
+    # Twilio settings
+    TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
+    TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
+    TWILIO_PHONE_NUMBER: str = os.getenv("TWILIO_PHONE_NUMBER", "")
+    
+    # Stripe settings
+    STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY", "")
+    STRIPE_PUBLISHABLE_KEY: str = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+    STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    
     # Real estate data settings
     MLS_API_KEY: str = os.getenv("MLS_API_KEY", "")
+    MLS_BASE_URL: str = os.getenv("MLS_BASE_URL", "https://api.mlsgrid.com/v2")
     ZILLOW_API_KEY: str = os.getenv("ZILLOW_API_KEY", "")
     
     # Lead scoring settings
@@ -141,6 +153,26 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     EMAILS_FROM_EMAIL: Optional[str] = None
     EMAILS_FROM_NAME: Optional[str] = None
+    
+    # Circuit breaker settings
+    CIRCUIT_BREAKER_FAILURE_THRESHOLD: int = 5
+    CIRCUIT_BREAKER_RECOVERY_TIMEOUT: int = 60
+    
+    # Rate limiting settings
+    DEFAULT_RATE_LIMIT_PER_SECOND: float = 10.0
+    DEFAULT_RATE_LIMIT_BURST: int = 20
+    
+    # Usage tracking settings
+    USAGE_TRACKING_ENABLED: bool = True
+    USAGE_ALERT_THRESHOLDS: Dict[str, int] = {
+        "warning": 80,
+        "critical": 95
+    }
+    
+    # Billing settings
+    BILLING_CURRENCY: str = "usd"
+    BILLING_TAX_RATE: float = 0.08  # 8% default sales tax
+    BILLING_PLATFORM_FEE_RATE: float = 0.05  # 5% platform fee
     
     # Monitoring settings
     ENABLE_METRICS: bool = True

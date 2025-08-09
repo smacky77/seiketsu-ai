@@ -125,12 +125,7 @@ export class AnalyticsService {
       })
 
       const response = await apiClient.get(`${this.baseUrl}/dashboard/comprehensive?${params}`)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch dashboard data: ${response.statusText}`)
-      }
-
-      const data = await response.json()
+      const data = response.data as any
       
       // Transform API response to match frontend interface
       return {
@@ -214,12 +209,7 @@ export class AnalyticsService {
       })
 
       const response = await apiClient.get(`${this.baseUrl}/client-acquisition/detailed?${params}`)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch acquisition details: ${response.statusText}`)
-      }
-
-      return await response.json()
+      return response.data as any
     } catch (error) {
       console.error('Failed to fetch client acquisition details:', error)
       throw error
@@ -243,11 +233,11 @@ export class AnalyticsService {
 
       const response = await apiClient.get(`${this.baseUrl}/client-success/satisfaction-tracking?${params}`)
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch satisfaction tracking: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to fetch satisfaction tracking: ${'API Error'}`)
       }
 
-      return await response.json()
+      return response.data as any
     } catch (error) {
       console.error('Failed to fetch satisfaction tracking:', error)
       throw error
@@ -265,11 +255,11 @@ export class AnalyticsService {
 
       const response = await apiClient.get(`${this.baseUrl}/real-time/live-dashboard?${params}`)
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch live dashboard: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to fetch live dashboard: ${'API Error'}`)
       }
 
-      return await response.json()
+      return response.data as any
     } catch (error) {
       console.error('Failed to fetch live dashboard:', error)
       throw error
@@ -283,11 +273,11 @@ export class AnalyticsService {
     try {
       const response = await apiClient.post(`${this.baseUrl}/reports/executive/generate`, request)
       
-      if (!response.ok) {
-        throw new Error(`Failed to generate report: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to generate report: ${'API Error'}`)
       }
 
-      const data = await response.json()
+      const data = response.data as any
       return {
         reportId: data.report_id,
         statusUrl: data.status_url
@@ -305,11 +295,11 @@ export class AnalyticsService {
     try {
       const response = await apiClient.get(`${this.baseUrl}/reports/${reportId}/status`)
       
-      if (!response.ok) {
-        throw new Error(`Failed to get report status: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to get report status: ${'API Error'}`)
       }
 
-      const data = await response.json()
+      const data = response.data as any
       return {
         reportId: data.report_id,
         status: data.status,
@@ -335,11 +325,11 @@ export class AnalyticsService {
 
       const response = await apiClient.get(`${this.baseUrl}/predictions/forecast?${params}`)
       
-      if (!response.ok) {
-        throw new Error(`Failed to get predictive forecast: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to get predictive forecast: ${'API Error'}`)
       }
 
-      const data = await response.json()
+      const data = response.data as any
       return {
         modelType: data.model_type,
         forecast: data.forecast,
@@ -366,11 +356,11 @@ export class AnalyticsService {
     try {
       const response = await apiClient.post(`${this.baseUrl}/alerts/configure`, alertConfig)
       
-      if (!response.ok) {
-        throw new Error(`Failed to configure alert: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to configure alert: ${'API Error'}`)
       }
 
-      const data = await response.json()
+      const data = response.data as any
       return { alertId: data.alert_id }
     } catch (error) {
       console.error('Failed to configure alert:', error)
@@ -390,11 +380,11 @@ export class AnalyticsService {
 
       const response = await apiClient.get(`${this.baseUrl}/export/dashboard?${params}`)
       
-      if (!response.ok) {
-        throw new Error(`Failed to export dashboard: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to export dashboard: ${'API Error'}`)
       }
 
-      return await response.blob()
+      return new Blob([response.data as string], { type: 'application/pdf' })
     } catch (error) {
       console.error('Failed to export dashboard:', error)
       throw error
@@ -418,11 +408,11 @@ export class AnalyticsService {
 
       const response = await apiClient.get(`${this.baseUrl}/trends/historical?${params}`)
       
-      if (!response.ok) {
-        throw new Error(`Failed to get historical trends: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to get historical trends: ${'API Error'}`)
       }
 
-      return await response.json()
+      return response.data as any
     } catch (error) {
       console.error('Failed to get historical trends:', error)
       throw error
@@ -436,11 +426,11 @@ export class AnalyticsService {
     try {
       const response = await apiClient.get(`${this.baseUrl}/benchmarks/competitive`)
       
-      if (!response.ok) {
-        throw new Error(`Failed to get competitive benchmarks: ${response.statusText}`)
+      if (false) {
+        throw new Error(`Failed to get competitive benchmarks: ${'API Error'}`)
       }
 
-      return await response.json()
+      return response.data as any
     } catch (error) {
       console.error('Failed to get competitive benchmarks:', error)
       throw error

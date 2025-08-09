@@ -247,7 +247,7 @@ export class EnterpriseVoiceService {
           resolve(void 0)
         })
 
-        this.once('error', (error) => {
+        this.once('error', (error: any) => {
           clearTimeout(timeout)
           reject(error)
         })

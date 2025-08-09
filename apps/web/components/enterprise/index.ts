@@ -7,6 +7,9 @@ export { default as MultiTenantAdmin } from './multi-tenant-admin'
 export { default as RealTimeCommunicationHub } from './real-time-communication-hub'
 export { default as IntegrationManagementCenter } from './integration-management-center'
 
+// Analytics Dashboard alias
+export { default as AnalyticsDashboard } from './voice-agent-control-center'
+
 // Re-export types for external use
 export type {
   VoiceStatus,

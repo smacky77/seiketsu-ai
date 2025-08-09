@@ -74,35 +74,39 @@ export interface VoiceAnalytics {
 class VoiceService {
   // Get all voice agents
   async getAgents(): Promise<VoiceAgent[]> {
-    return apiClient.get<VoiceAgent[]>(API_CONFIG.ENDPOINTS.VOICE.AGENTS);
+    const response = await apiClient.get<VoiceAgent[]>(API_CONFIG.ENDPOINTS.VOICE.AGENTS);
+    return response.data;
   }
 
   // Get voice agent by ID
   async getAgent(id: string): Promise<VoiceAgent> {
-    return apiClient.get<VoiceAgent>(
+    const response = await apiClient.get<VoiceAgent>(
       API_CONFIG.ENDPOINTS.VOICE.AGENTS,
       undefined,
       { id }
     );
+    return response.data;
   }
 
   // Create voice agent
   async createAgent(data: Partial<VoiceAgent>): Promise<VoiceAgent> {
-    return apiClient.post<VoiceAgent>(API_CONFIG.ENDPOINTS.VOICE.AGENTS, data);
+    const response = await apiClient.post<VoiceAgent>(API_CONFIG.ENDPOINTS.VOICE.AGENTS, data);
+    return response.data;
   }
 
   // Update voice agent
   async updateAgent(id: string, data: Partial<VoiceAgent>): Promise<VoiceAgent> {
-    return apiClient.put<VoiceAgent>(
+    const response = await apiClient.put<VoiceAgent>(
       API_CONFIG.ENDPOINTS.VOICE.AGENTS,
       data,
       { id }
     );
+    return response.data;
   }
 
   // Delete voice agent
   async deleteAgent(id: string): Promise<void> {
-    return apiClient.delete(API_CONFIG.ENDPOINTS.VOICE.AGENTS, { id });
+    await apiClient.delete(API_CONFIG.ENDPOINTS.VOICE.AGENTS, { id });
   }
 
   // Get conversations
@@ -114,19 +118,21 @@ class VoiceService {
     limit?: number;
     offset?: number;
   }): Promise<{ conversations: Conversation[]; total: number }> {
-    return apiClient.get<{ conversations: Conversation[]; total: number }>(
+    const response = await apiClient.get<{ conversations: Conversation[]; total: number }>(
       API_CONFIG.ENDPOINTS.VOICE.CONVERSATIONS,
       params
     );
+    return response.data;
   }
 
   // Get conversation by ID
   async getConversation(id: string): Promise<Conversation> {
-    return apiClient.get<Conversation>(
+    const response = await apiClient.get<Conversation>(
       API_CONFIG.ENDPOINTS.VOICE.CONVERSATIONS,
       undefined,
       { id }
     );
+    return response.data;
   }
 
   // Start conversation
@@ -135,19 +141,21 @@ class VoiceService {
     leadId?: string;
     context?: any;
   }): Promise<Conversation> {
-    return apiClient.post<Conversation>(
+    const response = await apiClient.post<Conversation>(
       API_CONFIG.ENDPOINTS.VOICE.CONVERSATIONS,
       data
     );
+    return response.data;
   }
 
   // End conversation
   async endConversation(id: string, summary?: string): Promise<Conversation> {
-    return apiClient.patch<Conversation>(
+    const response = await apiClient.patch<Conversation>(
       API_CONFIG.ENDPOINTS.VOICE.CONVERSATIONS,
       { summary },
       { id }
     );
+    return response.data;
   }
 
   // Synthesize speech with ElevenLabs
@@ -155,10 +163,11 @@ class VoiceService {
     audioUrl: string;
     audioData?: ArrayBuffer;
   }> {
-    return apiClient.post<{
+    const response = await apiClient.post<{
       audioUrl: string;
       audioData?: ArrayBuffer;
     }>(API_CONFIG.ENDPOINTS.VOICE.SYNTHESIS, request);
+    return response.data;
   }
 
   // Recognize speech
@@ -180,11 +189,12 @@ class VoiceService {
     }
 
     // Override headers for multipart/form-data
-    return apiClient.post<{
+    const response = await apiClient.post<{
       text: string;
       confidence: number;
       language: string;
     }>(API_CONFIG.ENDPOINTS.VOICE.RECOGNITION, formData);
+    return response.data;
   }
 
   // Train voice agent
@@ -193,11 +203,12 @@ class VoiceService {
     documents?: string[];
     settings?: any;
   }): Promise<{ status: string; jobId: string }> {
-    return apiClient.post<{ status: string; jobId: string }>(
+    const response = await apiClient.post<{ status: string; jobId: string }>(
       API_CONFIG.ENDPOINTS.VOICE.TRAINING,
       trainingData,
       { agentId }
     );
+    return response.data;
   }
 
   // Get training status
@@ -206,11 +217,12 @@ class VoiceService {
     progress: number;
     error?: string;
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       status: 'pending' | 'running' | 'completed' | 'failed';
       progress: number;
       error?: string;
     }>(API_CONFIG.ENDPOINTS.VOICE.TRAINING, { jobId });
+    return response.data;
   }
 
   // Get voice analytics
@@ -219,10 +231,11 @@ class VoiceService {
     startDate?: string;
     endDate?: string;
   }): Promise<VoiceAnalytics> {
-    return apiClient.get<VoiceAnalytics>(
+    const response = await apiClient.get<VoiceAnalytics>(
       API_CONFIG.ENDPOINTS.VOICE.ANALYTICS,
       params
     );
+    return response.data;
   }
 
   // Real-time voice processing with WebSocket

@@ -29,7 +29,7 @@ interface VoiceAIActions {
   updateConversationMetadata: (metadata: Partial<ConversationContext['metadata']>) => void
   
   // Agent Management
-  setActiveAgent: (agent: VoiceAgent) => void
+  setActiveAgent: (agent: VoiceAgent | null) => void
   updateAgentMetrics: (agentId: string, metrics: Partial<VoiceAgent['metrics']>) => void
   
   // Lead Management
@@ -272,7 +272,7 @@ export const useVoiceAIStore = create<VoiceAIStore>()(
     },
 
     // Agent Management
-    setActiveAgent: (agent) => set({ activeAgent: agent }),
+    setActiveAgent: (agent) => set({ activeAgent: agent || undefined }),
 
     updateAgentMetrics: (agentId, metrics) => {
       const { activeAgent } = get()

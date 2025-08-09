@@ -132,18 +132,20 @@ class MarketService {
     period?: '1_month' | '3_months' | '6_months' | '1_year';
     includeComparison?: boolean;
   }): Promise<MarketTrend[]> {
-    return apiClient.get<MarketTrend[]>(
+    const response = await apiClient.get<MarketTrend[]>(
       API_CONFIG.ENDPOINTS.MARKET.TRENDS,
       params
     );
+    return response.data;
   }
 
   // Get market trend for specific location
   async getLocationTrend(location: string, period?: string): Promise<MarketTrend> {
-    return apiClient.get<MarketTrend>(
+    const response = await apiClient.get<MarketTrend>(
       API_CONFIG.ENDPOINTS.MARKET.TRENDS,
       { location, period }
     );
+    return response.data;
   }
 
   // Get market insights
@@ -157,27 +159,30 @@ class MarketService {
     insights: MarketInsight[];
     total: number;
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       insights: MarketInsight[];
       total: number;
     }>(API_CONFIG.ENDPOINTS.MARKET.INSIGHTS, params);
+    return response.data;
   }
 
   // Get market insight by ID
   async getMarketInsight(id: string): Promise<MarketInsight> {
-    return apiClient.get<MarketInsight>(
+    const response = await apiClient.get<MarketInsight>(
       API_CONFIG.ENDPOINTS.MARKET.INSIGHTS,
       undefined,
       { id }
     );
+    return response.data;
   }
 
   // Create custom market insight
   async createMarketInsight(data: Partial<MarketInsight>): Promise<MarketInsight> {
-    return apiClient.post<MarketInsight>(
+    const response = await apiClient.post<MarketInsight>(
       API_CONFIG.ENDPOINTS.MARKET.INSIGHTS,
       data
     );
+    return response.data;
   }
 
   // Get market forecasts
@@ -186,18 +191,20 @@ class MarketService {
     timeframe?: string[];
     includeScenarios?: boolean;
   }): Promise<MarketForecast[]> {
-    return apiClient.get<MarketForecast[]>(
+    const response = await apiClient.get<MarketForecast[]>(
       API_CONFIG.ENDPOINTS.MARKET.FORECASTS,
       params
     );
+    return response.data;
   }
 
   // Get forecast for specific location
   async getLocationForecast(location: string, timeframe?: string): Promise<MarketForecast> {
-    return apiClient.get<MarketForecast>(
+    const response = await apiClient.get<MarketForecast>(
       API_CONFIG.ENDPOINTS.MARKET.FORECASTS,
       { location, timeframe }
     );
+    return response.data;
   }
 
   // Generate custom forecast
@@ -207,10 +214,11 @@ class MarketService {
     factors?: Record<string, number>;
     scenarios?: string[];
   }): Promise<MarketForecast> {
-    return apiClient.post<MarketForecast>(
+    const response = await apiClient.post<MarketForecast>(
       API_CONFIG.ENDPOINTS.MARKET.FORECASTS,
       data
     );
+    return response.data;
   }
 
   // Get competitor analysis
@@ -223,19 +231,21 @@ class MarketService {
     competitors: CompetitorAnalysis[];
     total: number;
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       competitors: CompetitorAnalysis[];
       total: number;
     }>(API_CONFIG.ENDPOINTS.MARKET.COMPETITORS, params);
+    return response.data;
   }
 
   // Get specific competitor
   async getCompetitor(id: string): Promise<CompetitorAnalysis> {
-    return apiClient.get<CompetitorAnalysis>(
+    const response = await apiClient.get<CompetitorAnalysis>(
       API_CONFIG.ENDPOINTS.MARKET.COMPETITORS,
       undefined,
       { id }
     );
+    return response.data;
   }
 
   // Compare with competitors
@@ -253,7 +263,7 @@ class MarketService {
     marketAverage: Record<string, number>;
     insights: string[];
   }> {
-    return apiClient.post<{
+    const response = await apiClient.post<{
       myPerformance: Record<string, number>;
       competitors: Array<{
         name: string;
@@ -263,6 +273,7 @@ class MarketService {
       marketAverage: Record<string, number>;
       insights: string[];
     }>(API_CONFIG.ENDPOINTS.MARKET.COMPETITORS, params);
+    return response.data;
   }
 
   // Get market opportunities
@@ -276,18 +287,19 @@ class MarketService {
     opportunities: MarketOpportunity[];
     total: number;
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       opportunities: MarketOpportunity[];
       total: number;
     }>(API_CONFIG.ENDPOINTS.MARKET.INSIGHTS, {
       ...params,
       opportunitiesOnly: true
     });
+    return response.data;
   }
 
   // Track market opportunity
   async trackOpportunity(id: string): Promise<void> {
-    return apiClient.post(
+    await apiClient.post(
       API_CONFIG.ENDPOINTS.MARKET.INSIGHTS,
       { action: 'track' },
       { id }
@@ -316,7 +328,7 @@ class MarketService {
       confidence: number;
     };
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       overview: {
         medianPrice: number;
         priceChange: number;
@@ -340,6 +352,7 @@ class MarketService {
       location, 
       summary: true 
     });
+    return response.data;
   }
 
   // Get historical market data
@@ -361,7 +374,7 @@ class MarketService {
       trend: number;
     }>;
   }> {
-    return apiClient.get<{
+    const response = await apiClient.get<{
       data: Array<{
         date: string;
         values: Record<string, number>;
@@ -376,6 +389,7 @@ class MarketService {
       ...params,
       historical: true
     });
+    return response.data;
   }
 
   // Subscribe to market alerts
@@ -385,15 +399,16 @@ class MarketService {
     thresholds?: Record<string, number>;
     frequency?: 'immediate' | 'daily' | 'weekly';
   }): Promise<{ subscriptionId: string }> {
-    return apiClient.post<{ subscriptionId: string }>(
+    const response = await apiClient.post<{ subscriptionId: string }>(
       API_CONFIG.ENDPOINTS.MARKET.INSIGHTS,
       { ...params, action: 'subscribe' }
     );
+    return response.data;
   }
 
   // Unsubscribe from market alerts
   async unsubscribeFromAlerts(subscriptionId: string): Promise<void> {
-    return apiClient.delete(
+    await apiClient.delete(
       API_CONFIG.ENDPOINTS.MARKET.INSIGHTS,
       { subscriptionId }
     );

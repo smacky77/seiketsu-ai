@@ -3,12 +3,13 @@
  * Centralized exports for all performance optimization modules
  */
 
-// Core optimizers
-export { AudioOptimizer, type AudioOptimizationConfig, type PerformanceMetrics } from './audio-optimizer'
-export { MemoryManager, type MemoryConfig, type MemoryMetrics } from './memory-manager'
-export { WebSocketOptimizer, type WebSocketConfig, type ConnectionMetrics } from './websocket-optimizer'
-export { BundleOptimizer, bundleOptimizer, useDynamicImport, type BundleConfig } from './bundle-optimizer'
-export { 
+// Import classes first
+import { useState, useEffect } from 'react'
+import { AudioOptimizer, type AudioOptimizationConfig, type PerformanceMetrics } from './audio-optimizer'
+import { MemoryManager, type MemoryConfig, type MemoryMetrics } from './memory-manager'
+import { WebSocketOptimizer, type WebSocketConfig, type ConnectionMetrics } from './websocket-optimizer'
+import { BundleOptimizer, bundleOptimizer, useDynamicImport, type BundleConfig } from './bundle-optimizer'
+import { 
   PerformanceMonitor, 
   performanceMonitor, 
   usePerformanceMonitor,
@@ -16,6 +17,20 @@ export {
   type WebVitalsMetrics,
   type VoiceMetrics 
 } from './performance-monitor'
+
+// Re-export everything
+export { AudioOptimizer, type AudioOptimizationConfig, type PerformanceMetrics }
+export { MemoryManager, type MemoryConfig, type MemoryMetrics }
+export { WebSocketOptimizer, type WebSocketConfig, type ConnectionMetrics }
+export { BundleOptimizer, bundleOptimizer, useDynamicImport, type BundleConfig }
+export { 
+  PerformanceMonitor, 
+  performanceMonitor, 
+  usePerformanceMonitor,
+  type PerformanceConfig,
+  type WebVitalsMetrics,
+  type VoiceMetrics 
+}
 
 // Performance suite class for unified management
 class PerformanceSuite {
@@ -154,7 +169,7 @@ class PerformanceSuite {
    */
   exportReport(): {
     timestamp: number
-    metrics: ReturnType<typeof this.getMetrics>
+    metrics: any
     recommendations: string[]
     isHealthy: boolean
   } {
@@ -191,18 +206,19 @@ class PerformanceSuite {
   get audio() { return this.audioOptimizer }
   get memory() { return this.memoryManager }
   get websocket() { return this.wsOptimizer }
-  get monitor() { return this.monitor }
+  get performanceMonitor() { return this.monitor }
 }
 
 // Singleton instance
 export const performanceSuite = new PerformanceSuite()
 
 // React hook for unified performance management
-export function usePerformanceSuite() {
-  const [metrics, setMetrics] = React.useState(performanceSuite.getMetrics())
-  const [isInitialized, setIsInitialized] = React.useState(false)
 
-  React.useEffect(() => {
+export function usePerformanceSuite() {
+  const [metrics, setMetrics] = useState(performanceSuite.getMetrics())
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  useEffect(() => {
     const initializeSuite = async () => {
       try {
         await performanceSuite.initialize()

@@ -1,0 +1,539 @@
+# Seiketsu AI - Client Provisioning Workflow
+# Automated provisioning of client-specific infrastructure and configurations
+
+name: Provision Client
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_name:
+        description: 'Client name (alphanumeric, hyphens allowed)'
+        required: true
+        type: string
+      client_tier:
+        description: 'Client tier'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - startup
+          - standard
+          - enterprise
+          - premium
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      enable_features:
+        description: 'Feature flags (comma-separated)'
+        required: false
+        default: 'voice_ai,analytics,multi_tenant'
+        type: string
+
+env:
+  AWS_REGION: us-east-1
+  CLIENT_NAME: ${{ github.event.inputs.client_name }}
+  CLIENT_TIER: ${{ github.event.inputs.client_tier }}
+  ENVIRONMENT: ${{ github.event.inputs.environment }}
+  TF_VERSION: '1.6.0'
+
+jobs:
+  validate-client:
+    name: Validate Client Input
+    runs-on: ubuntu-latest
+    
+    outputs:
+      client-valid: ${{ steps.validate.outputs.valid }}
+      
+    steps:
+      - name: Validate client name
+        id: validate
+        run: |
+          CLIENT_NAME="${{ env.CLIENT_NAME }}"
+          
+          # Validate client name format
+          if [[ ! "$CLIENT_NAME" =~ ^[a-zA-Z0-9-]+$ ]]; then
+            echo "❌ Invalid client name format. Use alphanumeric characters and hyphens only."
+            echo "valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # Check length
+          if [ ${#CLIENT_NAME} -gt 30 ]; then
+            echo "❌ Client name too long. Maximum 30 characters."
+            echo "valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "✅ Client name validation passed"
+          echo "valid=true" >> $GITHUB_OUTPUT
+
+  check-existing-client:
+    name: Check Existing Client
+    runs-on: ubuntu-latest
+    needs: validate-client
+    if: needs.validate-client.outputs.client-valid == 'true'
+    
+    outputs:
+      client-exists: ${{ steps.check.outputs.exists }}
+      
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Check if client exists
+        id: check
+        run: |
+          # Check if client database exists
+          DB_EXISTS=$(aws rds describe-db-instances --query "DBInstances[?DBName=='seiketsu_${CLIENT_NAME//-/_}_${ENVIRONMENT}'].DBInstanceIdentifier" --output text)
+          
+          if [ ! -z "$DB_EXISTS" ]; then
+            echo "⚠️  Client infrastructure already exists"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Client infrastructure does not exist, proceeding with provisioning"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+  generate-client-config:
+    name: Generate Client Configuration
+    runs-on: ubuntu-latest
+    needs: [validate-client, check-existing-client]
+    if: needs.check-existing-client.outputs.client-exists == 'false'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Generate client-specific Terraform variables
+        run: |
+          mkdir -p infrastructure/clients/${{ env.CLIENT_NAME }}
+          
+          cat > infrastructure/clients/${{ env.CLIENT_NAME }}/terraform.tfvars << EOF
+          # Client: ${{ env.CLIENT_NAME }}
+          # Tier: ${{ env.CLIENT_TIER }}
+          # Environment: ${{ env.ENVIRONMENT }}
+          # Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          client_name = "${{ env.CLIENT_NAME }}"
+          client_tier = "${{ env.CLIENT_TIER }}"
+          environment = "${{ env.ENVIRONMENT }}"
+          
+          # Tier-specific configurations
+          EOF
+          
+          # Add tier-specific configurations
+          case "${{ env.CLIENT_TIER }}" in
+            "startup")
+              cat >> infrastructure/clients/${{ env.CLIENT_NAME }}/terraform.tfvars << EOF
+          db_instance_class = "db.t3.micro"
+          cache_node_type = "cache.t3.micro"
+          api_task_cpu = 256
+          api_task_memory = 512
+          api_desired_count = 1
+          api_max_capacity = 2
+          cdn_price_class = "PriceClass_100"
+          backup_retention_days = 7
+          monitoring_level = "basic"
+          EOF
+              ;;
+            "standard")
+              cat >> infrastructure/clients/${{ env.CLIENT_NAME }}/terraform.tfvars << EOF
+          db_instance_class = "db.t3.small"
+          cache_node_type = "cache.t3.small"
+          api_task_cpu = 512
+          api_task_memory = 1024
+          api_desired_count = 2
+          api_max_capacity = 4
+          cdn_price_class = "PriceClass_200"
+          backup_retention_days = 14
+          monitoring_level = "standard"
+          EOF
+              ;;
+            "enterprise")
+              cat >> infrastructure/clients/${{ env.CLIENT_NAME }}/terraform.tfvars << EOF
+          db_instance_class = "db.r6g.large"
+          cache_node_type = "cache.r6g.large"
+          api_task_cpu = 1024
+          api_task_memory = 2048
+          api_desired_count = 3
+          api_max_capacity = 10
+          cdn_price_class = "PriceClass_All"
+          backup_retention_days = 30
+          monitoring_level = "enterprise"
+          enable_multi_az = true
+          enable_encryption = true
+          EOF
+              ;;
+            "premium")
+              cat >> infrastructure/clients/${{ env.CLIENT_NAME }}/terraform.tfvars << EOF
+          db_instance_class = "db.r6g.xlarge"
+          cache_node_type = "cache.r6g.xlarge"
+          api_task_cpu = 2048
+          api_task_memory = 4096
+          api_desired_count = 5
+          api_max_capacity = 20
+          cdn_price_class = "PriceClass_All"
+          backup_retention_days = 90
+          monitoring_level = "premium"
+          enable_multi_az = true
+          enable_encryption = true
+          enable_performance_insights = true
+          EOF
+              ;;
+          esac
+          
+          # Add feature flags
+          cat >> infrastructure/clients/${{ env.CLIENT_NAME }}/terraform.tfvars << EOF
+          
+          # Feature flags
+          feature_flags = {
+          EOF
+          
+          IFS=',' read -ra FEATURES <<< "${{ github.event.inputs.enable_features }}"
+          for feature in "${FEATURES[@]}"; do
+            echo "    $feature = true" >> infrastructure/clients/${{ env.CLIENT_NAME }}/terraform.tfvars
+          done
+          
+          cat >> infrastructure/clients/${{ env.CLIENT_NAME }}/terraform.tfvars << EOF
+          }
+          
+          # Resource tags
+          tags = {
+            Client = "${{ env.CLIENT_NAME }}"
+            Tier = "${{ env.CLIENT_TIER }}"
+            Environment = "${{ env.ENVIRONMENT }}"
+            ManagedBy = "Terraform"
+            Project = "Seiketsu-AI"
+            ProvisionedAt = "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+          
+      - name: Generate client application configuration
+        run: |
+          mkdir -p apps/client-configs/${{ env.CLIENT_NAME }}
+          
+          cat > apps/client-configs/${{ env.CLIENT_NAME }}/config.json << EOF
+          {
+            "client": {
+              "name": "${{ env.CLIENT_NAME }}",
+              "tier": "${{ env.CLIENT_TIER }}",
+              "environment": "${{ env.ENVIRONMENT }}"
+            },
+            "features": {
+          EOF
+          
+          IFS=',' read -ra FEATURES <<< "${{ github.event.inputs.enable_features }}"
+          for i in "${!FEATURES[@]}"; do
+            feature="${FEATURES[i]}"
+            if [ $i -eq $((${#FEATURES[@]} - 1)) ]; then
+              echo "      \"$feature\": true" >> apps/client-configs/${{ env.CLIENT_NAME }}/config.json
+            else
+              echo "      \"$feature\": true," >> apps/client-configs/${{ env.CLIENT_NAME }}/config.json
+            fi
+          done
+          
+          cat >> apps/client-configs/${{ env.CLIENT_NAME }}/config.json << EOF
+            },
+            "limits": {
+          EOF
+          
+          # Add tier-specific limits
+          case "${{ env.CLIENT_TIER }}" in
+            "startup")
+              cat >> apps/client-configs/${{ env.CLIENT_NAME }}/config.json << EOF
+              "max_users": 50,
+              "max_properties": 500,
+              "voice_minutes_per_month": 1000,
+              "api_calls_per_minute": 100
+          EOF
+              ;;
+            "standard")
+              cat >> apps/client-configs/${{ env.CLIENT_NAME }}/config.json << EOF
+              "max_users": 200,
+              "max_properties": 2000,
+              "voice_minutes_per_month": 5000,
+              "api_calls_per_minute": 500
+          EOF
+              ;;
+            "enterprise")
+              cat >> apps/client-configs/${{ env.CLIENT_NAME }}/config.json << EOF
+              "max_users": 1000,
+              "max_properties": 10000,
+              "voice_minutes_per_month": 20000,
+              "api_calls_per_minute": 2000
+          EOF
+              ;;
+            "premium")
+              cat >> apps/client-configs/${{ env.CLIENT_NAME }}/config.json << EOF
+              "max_users": -1,
+              "max_properties": -1,
+              "voice_minutes_per_month": -1,
+              "api_calls_per_minute": 5000
+          EOF
+              ;;
+          esac
+          
+          cat >> apps/client-configs/${{ env.CLIENT_NAME }}/config.json << EOF
+            },
+            "branding": {
+              "primary_color": "#1F2937",
+              "secondary_color": "#3B82F6",
+              "logo_url": "",
+              "custom_domain": ""
+            }
+          }
+          EOF
+          
+      - name: Upload client configurations
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-config-${{ env.CLIENT_NAME }}
+          path: |
+            infrastructure/clients/${{ env.CLIENT_NAME }}/
+            apps/client-configs/${{ env.CLIENT_NAME }}/
+          retention-days: 30
+
+  provision-infrastructure:
+    name: Provision Client Infrastructure
+    runs-on: ubuntu-latest
+    needs: [generate-client-config]
+    environment: ${{ github.event.inputs.environment }}-provision
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download client configurations
+        uses: actions/download-artifact@v4
+        with:
+          name: client-config-${{ env.CLIENT_NAME }}
+          path: ./
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Initialize client-specific workspace
+        run: |
+          cd infrastructure/terraform
+          
+          # Initialize terraform
+          terraform init
+          
+          # Create or select workspace for client
+          terraform workspace new ${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }} || terraform workspace select ${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}
+          
+      - name: Terraform Plan for Client
+        run: |
+          cd infrastructure/terraform
+          terraform plan -var-file="../clients/${{ env.CLIENT_NAME }}/terraform.tfvars" -out=client-plan
+          
+      - name: Terraform Apply for Client
+        run: |
+          cd infrastructure/terraform
+          terraform apply -auto-approve client-plan
+          
+      - name: Extract Infrastructure Outputs
+        id: outputs
+        run: |
+          cd infrastructure/terraform
+          terraform output -json > client-outputs.json
+          
+          # Extract key outputs
+          DB_ENDPOINT=$(terraform output -raw database_endpoint)
+          API_URL=$(terraform output -raw api_gateway_url)
+          CDN_URL=$(terraform output -raw cloudfront_url)
+          
+          echo "db_endpoint=$DB_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "cdn_url=$CDN_URL" >> $GITHUB_OUTPUT
+          
+      - name: Store client credentials in AWS Secrets Manager
+        run: |
+          # Generate client-specific secrets
+          DB_PASSWORD=$(openssl rand -base64 32)
+          JWT_SECRET=$(openssl rand -base64 64)
+          API_KEY=$(uuidgen)
+          
+          # Store in secrets manager
+          aws secretsmanager create-secret \
+            --name "seiketsu-ai/${{ env.CLIENT_NAME }}/${{ env.ENVIRONMENT }}/database" \
+            --description "Database credentials for client ${{ env.CLIENT_NAME }}" \
+            --secret-string "{\"password\":\"$DB_PASSWORD\"}" || \
+          aws secretsmanager update-secret \
+            --secret-id "seiketsu-ai/${{ env.CLIENT_NAME }}/${{ env.ENVIRONMENT }}/database" \
+            --secret-string "{\"password\":\"$DB_PASSWORD\"}"
+            
+          aws secretsmanager create-secret \
+            --name "seiketsu-ai/${{ env.CLIENT_NAME }}/${{ env.ENVIRONMENT }}/application" \
+            --description "Application secrets for client ${{ env.CLIENT_NAME }}" \
+            --secret-string "{\"jwt_secret\":\"$JWT_SECRET\",\"api_key\":\"$API_KEY\"}" || \
+          aws secretsmanager update-secret \
+            --secret-id "seiketsu-ai/${{ env.CLIENT_NAME }}/${{ env.ENVIRONMENT }}/application" \
+            --secret-string "{\"jwt_secret\":\"$JWT_SECRET\",\"api_key\":\"$API_KEY\"}"
+
+  setup-monitoring:
+    name: Setup Client Monitoring
+    runs-on: ubuntu-latest
+    needs: [provision-infrastructure]
+    
+    steps:
+      - name: Configure CloudWatch Dashboards
+        run: |
+          # Create client-specific CloudWatch dashboard
+          aws cloudwatch put-dashboard \
+            --dashboard-name "SeiketsuAI-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}" \
+            --dashboard-body '{
+              "widgets": [
+                {
+                  "type": "metric",
+                  "properties": {
+                    "metrics": [
+                      ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-alb"],
+                      ["AWS/ApplicationELB", "ResponseTime", "LoadBalancer", "seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-alb"],
+                      ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-db"]
+                    ],
+                    "period": 300,
+                    "stat": "Average",
+                    "region": "${{ env.AWS_REGION }}",
+                    "title": "Client Performance Metrics"
+                  }
+                }
+              ]
+            }'
+            
+      - name: Setup CloudWatch Alarms
+        run: |
+          # High API response time alarm
+          aws cloudwatch put-metric-alarm \
+            --alarm-name "SeiketsuAI-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-HighResponseTime" \
+            --alarm-description "High API response time for client ${{ env.CLIENT_NAME }}" \
+            --metric-name ResponseTime \
+            --namespace AWS/ApplicationELB \
+            --statistic Average \
+            --period 300 \
+            --threshold 2.0 \
+            --comparison-operator GreaterThanThreshold \
+            --evaluation-periods 2 \
+            --alarm-actions "arn:aws:sns:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:seiketsu-ai-alerts" \
+            --dimensions Name=LoadBalancer,Value=seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-alb
+            
+          # High error rate alarm
+          aws cloudwatch put-metric-alarm \
+            --alarm-name "SeiketsuAI-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-HighErrorRate" \
+            --alarm-description "High error rate for client ${{ env.CLIENT_NAME }}" \
+            --metric-name HTTPCode_Target_5XX_Count \
+            --namespace AWS/ApplicationELB \
+            --statistic Sum \
+            --period 300 \
+            --threshold 10 \
+            --comparison-operator GreaterThanThreshold \
+            --evaluation-periods 1 \
+            --alarm-actions "arn:aws:sns:${{ env.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:seiketsu-ai-alerts" \
+            --dimensions Name=LoadBalancer,Value=seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-alb
+
+  deploy-client-application:
+    name: Deploy Client Application
+    runs-on: ubuntu-latest
+    needs: [provision-infrastructure, setup-monitoring]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download client configurations
+        uses: actions/download-artifact@v4
+        with:
+          name: client-config-${{ env.CLIENT_NAME }}
+          path: ./
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Build client-specific application
+        run: |
+          # Install dependencies
+          npm ci
+          
+          # Copy client config
+          cp apps/client-configs/${{ env.CLIENT_NAME }}/config.json apps/web/lib/client-config.json
+          
+          # Build application
+          cd apps/web
+          NEXT_PUBLIC_CLIENT_NAME="${{ env.CLIENT_NAME }}" \
+          NEXT_PUBLIC_CLIENT_TIER="${{ env.CLIENT_TIER }}" \
+          npm run build
+          
+      - name: Deploy to client-specific S3 bucket
+        run: |
+          cd apps/web
+          aws s3 sync out/ s3://seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-frontend/ --delete
+          
+      - name: Update client-specific ECS service
+        run: |
+          # Get current task definition
+          TASK_DEF_ARN=$(aws ecs describe-services \
+            --cluster seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-cluster \
+            --services seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-api-service \
+            --query 'services[0].taskDefinition' --output text)
+            
+          # Force new deployment with client config
+          aws ecs update-service \
+            --cluster seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-cluster \
+            --service seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-api-service \
+            --force-new-deployment
+            
+          # Wait for deployment to complete
+          aws ecs wait services-stable \
+            --cluster seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-cluster \
+            --services seiketsu-ai-${{ env.CLIENT_NAME }}-${{ env.ENVIRONMENT }}-api-service
+
+  notify-completion:
+    name: Notify Completion
+    runs-on: ubuntu-latest
+    needs: [deploy-client-application]
+    
+    steps:
+      - name: Send completion notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#client-provisioning'
+          message: |
+            🎉 Client provisioning completed successfully!
+            
+            **Client:** ${{ env.CLIENT_NAME }}
+            **Tier:** ${{ env.CLIENT_TIER }}
+            **Environment:** ${{ env.ENVIRONMENT }}
+            **Features:** ${{ github.event.inputs.enable_features }}
+            
+            Client is ready for use.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

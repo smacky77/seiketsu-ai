@@ -364,19 +364,19 @@ export class VoiceWebRTC extends EventTarget {
     // Stop local stream
     if (this.connection.localStream) {
       this.connection.localStream.getTracks().forEach(track => track.stop())
-      this.connection.localStream = null
+      this.connection.localStream = undefined
     }
 
     // Close data channel
     if (this.connection.dataChannel) {
       this.connection.dataChannel.close()
-      this.connection.dataChannel = null
+      this.connection.dataChannel = undefined
     }
 
     // Close peer connection
     if (this.connection.peerConnection) {
       this.connection.peerConnection.close()
-      this.connection.peerConnection = null
+      this.connection.peerConnection = undefined
     }
 
     this.localAudioSender = null
@@ -403,11 +403,11 @@ export class VoiceWebRTC extends EventTarget {
   }
 
   // Event management
-  addEventListener(listener: VoiceAIEventListener): void {
+  addVoiceAIEventListener(listener: VoiceAIEventListener): void {
     this.listeners.push(listener)
   }
 
-  removeEventListener(listener: VoiceAIEventListener): void {
+  removeVoiceAIEventListener(listener: VoiceAIEventListener): void {
     const index = this.listeners.indexOf(listener)
     if (index > -1) {
       this.listeners.splice(index, 1)

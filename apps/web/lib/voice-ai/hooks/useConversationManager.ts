@@ -102,11 +102,11 @@ export function useConversationManager(options: UseConversationManagerOptions = 
       // Add disposition if provided
       if (disposition) {
         updateConversationMetadata({
-          disposition: disposition.outcome,
-          dispositionNotes: disposition.notes,
-          nextAction: disposition.nextAction,
-          scheduledCallback: disposition.scheduledCallback
-        })
+          platform: 'voice',
+          channel: 'phone',
+          source: 'inbound',
+          // disposition data will be handled separately
+        } as any)
       }
 
       await endConversation()

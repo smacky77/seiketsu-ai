@@ -38,7 +38,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
               setUser(verifiedUser);
             } catch (error) {
               // Token invalid, clear auth
-              authService.clearAuth();
+              authService.logout();
             }
           }
         }

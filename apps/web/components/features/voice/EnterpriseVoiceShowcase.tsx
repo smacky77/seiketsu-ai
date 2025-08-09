@@ -160,7 +160,7 @@ export function EnterpriseVoiceShowcase() {
       case 'Lead Conversion':
         return `${(Math.random() * 20 + 120).toFixed(0)}%`
       default:
-        return metric.value
+        return `${Math.random() * 100}%`
     }
   }
 

@@ -53,11 +53,11 @@ class BundleOptimizer {
     if (typeof window === 'undefined') return
 
     const moduleMap: Record<string, () => Promise<any>> = {
-      'voice-engine': () => import('@/lib/voice-ai/engine/voice-engine'),
+      'voice-engine': () => import('@/lib/voice-ai/services/ConversationEngine'),
       'audio-processor': () => import('@/lib/voice-ai/utils/audio'),
       'websocket-client': () => import('@/lib/performance/websocket-optimizer'),
-      'conversation-manager': () => import('@/lib/voice-ai/conversation/conversation-manager'),
-      'lead-qualification': () => import('@/lib/voice-ai/qualification/lead-qualifier'),
+      'conversation-manager': () => import('@/lib/voice-ai/services/AudioProcessor'),
+      'lead-qualification': () => import('@/lib/voice-ai/hooks/useLeadQualification'),
     }
 
     const importFn = moduleMap[moduleName]
@@ -106,13 +106,13 @@ class BundleOptimizer {
     }
 
     const moduleMap: Record<string, () => Promise<any>> = {
-      'voice-engine': () => import('@/lib/voice-ai/engine/voice-engine'),
+      'voice-engine': () => import('@/lib/voice-ai/services/ConversationEngine'),
       'audio-processor': () => import('@/lib/voice-ai/utils/audio'),
       'websocket-client': () => import('@/lib/performance/websocket-optimizer'),
-      'conversation-manager': () => import('@/lib/voice-ai/conversation/conversation-manager'),
-      'lead-qualification': () => import('@/lib/voice-ai/qualification/lead-qualifier'),
-      'analytics-dashboard': () => import('@/components/enterprise/analytics-dashboard'),
-      'voice-control-center': () => import('@/components/enterprise/voice-agent-control-center'),
+      'conversation-manager': () => import('@/lib/voice-ai/services/AudioProcessor'),
+      'lead-qualification': () => import('@/lib/voice-ai/hooks/useLeadQualification'),
+      'analytics-dashboard': () => import('@/components/admin/SystemOverviewDashboard'),
+      'voice-control-center': () => import('@/components/features/voice/EnterpriseVoiceShowcase'),
     }
 
     const importFn = moduleMap[moduleName]

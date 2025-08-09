@@ -343,6 +343,7 @@ class AudioOptimizer {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
+        // @ts-ignore - experimental constraint
         latency: this.config.maxLatency / 1000, // Convert to seconds
         // @ts-ignore - experimental constraint
         googEchoCancellation: true,

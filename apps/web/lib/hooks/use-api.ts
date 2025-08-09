@@ -112,8 +112,9 @@ export function useOptimisticMutation<T, V = any>(
     },
     onError: (error, variables, context) => {
       // Rollback on error
-      if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData)
+      const typedContext = context as { previousData?: ApiResponse<T[]> } | undefined
+      if (typedContext?.previousData) {
+        queryClient.setQueryData(queryKey, typedContext.previousData)
       }
       options?.onError?.(error, variables, context)
     },

@@ -124,7 +124,7 @@ export function VoiceAgentControlCenter({
     wsLatency: 0,
     isOptimal: true
   })
-  const intervalRef = useRef<NodeJS.Timeout>()
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const cleanupRef = useRef<(() => void)[]>([])
 
   // Performance-optimized real-time updates

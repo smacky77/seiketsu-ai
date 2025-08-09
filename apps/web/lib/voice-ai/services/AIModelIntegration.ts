@@ -151,7 +151,7 @@ export class AIModelIntegration {
         source.connect(this.audioContext!.destination)
         
         source.onended = () => resolve()
-        source.onerror = (error) => reject(error)
+        // AudioBufferSourceNode doesn't have onerror, handle errors in catch block
         
         source.start()
       } catch (error) {
@@ -240,11 +240,11 @@ export class AIModelIntegration {
   }
 
   // Event management
-  addEventListener(listener: VoiceAIEventListener): void {
+  addVoiceAIEventListener(listener: VoiceAIEventListener): void {
     this.listeners.push(listener)
   }
 
-  removeEventListener(listener: VoiceAIEventListener): void {
+  removeVoiceAIEventListener(listener: VoiceAIEventListener): void {
     const index = this.listeners.indexOf(listener)
     if (index > -1) {
       this.listeners.splice(index, 1)
