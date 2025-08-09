@@ -12,7 +12,7 @@ const nextConfig = {
   generateEtags: false,
   
   // Bundle optimization
-  swcMinify: true,
+  // swcMinify is deprecated in Next.js 15 (SWC is now the default)
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn']
